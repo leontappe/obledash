@@ -11,7 +11,7 @@
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 240
-#define FONT_SIZE 4
+#define FONT_SIZE 2
 
 #define BUTTON_LEFT 25
 #define BUTTON_RIGHT 26
@@ -67,11 +67,7 @@ void initDisplay() {
   tft.setRotation(1);
   tft.fillScreen(TFT_WHITE);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);
-
   tft.setTextSize(FONT_SIZE);
-  tft.setTextDatum(MC_DATUM);
-  tft.setTextPadding(SCREEN_WIDTH - leftPadded);
-  tft.setTextWrap(true);
 
   tft.drawCentreString("Initializing...", centerX, 80, FONT_SIZE);
 }
@@ -86,20 +82,21 @@ void drawData(display_data_t data) {
   Serial.println(data.ambientTemp);
 
   // Clear TFT screen
-  tft.fillScreen(TFT_WHITE);
+  //tft.fillScreen(TFT_WHITE);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);
 
-  int textY = 80;
+  const int offset = 35;
+  int textY = 50;
 
   String tempText = "RPM: " + String(data.rpm);
   tft.drawCentreString(tempText, centerX, textY, FONT_SIZE);
 
-  textY += 20;
-  tempText = "Fuel Consumption: " + String(data.currentFuelConsumption) + "L/h";
+  textY += offset;
+  tempText = "Fuel: " + String(data.currentFuelConsumption) + "L/h";
   tft.drawCentreString(tempText, centerX, textY, FONT_SIZE);
 
-  textY += 20;
-  tempText = "Temperature: " + String(data.ambientTemp) + "C";
+  textY += offset;
+  tempText = "Temp: " + String(data.ambientTemp) + "C";
   tft.drawCentreString(tempText, centerX, textY, FONT_SIZE);
 }
 
@@ -113,7 +110,7 @@ void setup() {
 
   Serial.println("Initializing BLE...");
 
-  initBLE();
+  //initBLE();
 
   pinMode(BUTTON_LEFT, INPUT_PULLUP);
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);
@@ -125,12 +122,10 @@ void setup() {
 void loop() {
   display_data_t data;
 
-  // Simulate data for testing
-  /* data.rpm = random(1000, 8000);                      // Simulate RPM
+  /* // Simulate data for testing
+  data.rpm = random(1000, 8000);                      // Simulate RPM
   data.ambientTemp = random(20, 40);                  // Simulate temperature
   data.currentFuelConsumption = random(5, 15) / 10.0; // Simulate fuel consumption */
-
-  drawData(data);
 
   float tempRPM = myELM327.rpm();
   if (myELM327.nb_rx_state == ELM_SUCCESS) {
