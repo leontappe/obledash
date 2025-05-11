@@ -1,12 +1,22 @@
-# proof of concept using randomnerdtutorials tutorial
+# proof of concept using the weird ESP32/LCD/button board i have around
 
-We're using exactly the same model of devboard as on the tutorial (ESP32-2432S028R) so it might as well work
+The board has am esp32doit-devkit-v1, 240x240 ST7789V LCD, and 3 front facing buttons.
 
-https://randomnerdtutorials.com/programming-esp32-cyd-cheap-yellow-display-vs-code/
+Buttons are connected as follows:
 
-This comes out with lower storage usage:
-```
-Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
-RAM:   [=         ]  12.3% (used 40340 bytes from 327680 bytes)
-Flash: [========= ]  91.3% (used 1196741 bytes from 1310720 bytes)
-```
+- left button: GPIO 25
+- right button: GPIO 26
+- center button: GPIO 27
+
+All buttons are pulled up, so they are LOW when pressed.
+
+The LCD is connected as follows:
+
+Backlight: GPIO 19
+DC: GPIO 4
+RST/RES: GPIO 22
+MOSI/SDA: GPIO 23
+CLK: GPIO 18
+CS: GPIO 5 
+
+The LCD is a 240x240 ST7789V, and the ESP32 is connected to it using SPI.
