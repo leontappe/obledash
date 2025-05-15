@@ -52,7 +52,7 @@ void initBLE() {
     handleError("Couldn't connect to ELM327 - Phase 1");
   }
 
-  if (!myELM327.begin(BLESerial, true, 2000, '6', 128, 200)) {
+  if (!myELM327.begin(BLESerial, true, 2000, '6', 1024, 100)) {
     handleError("Couldn't connect to ELM327 - Phase 2");
   }
 
@@ -116,23 +116,53 @@ void setup() {
   Serial.println("Fully Started");
 }
 
-void loop() {
-  display_data_t data;
+// list of functions to be called in main loop as strings
+char* functions[] = {
+  "rpm",
+  "ambientTemp",
+  "currentFuelConsumption"
+};
 
+char* currentFunction;
+int currentFunctionIndex = 0;
+
+void loop() {
   /* // Simulate data for testing
   data.rpm = random(1000, 8000);                      // Simulate RPM
   data.ambientTemp = random(20, 40);                  // Simulate temperature
   data.currentFuelConsumption = random(5, 15) / 10.0; // Simulate fuel consumption */
 
-  float tempRPM = myELM327.rpm();
-  if (myELM327.nb_rx_state == ELM_SUCCESS) {
-    displayData.rpm = (uint32_t)tempRPM;
-    data.rpm = displayData.rpm;
+  currentFunction = functions[currentFunctionIndex];
 
-    drawData(data);
+  float tmpData = 0;
+
+  switch (currentFunctionIndex) {
+    case 0:
+      tmpData = myELM327.rpm();
+      break;
+    case 1:
+      tmpData = myELM327.ambientAirTemp();
+      break;
+    case 2:
+      tmpData = myELM327.fuelRate();
+      break;
+  }
+
+  if (myELM327.nb_rx_state == ELM_SUCCESS) {
+    switch (currentFunctionIndex) {
+      case 0:
+        displayData.rpm = (uint32_t)tmpData;
+        break;
+      case 1:
+        displayData.ambientTemp = (float_t)tmpData;
+        break;
+      case 2:
+        displayData.currentFuelConsumption = (float_t)tmpData;
+        break;
+    }
+
+    drawData(displayData);
   } else if (myELM327.nb_rx_state != ELM_GETTING_MSG) {
     myELM327.printError();
   }
-
-  delay(1000);
 }
