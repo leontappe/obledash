@@ -6,9 +6,6 @@
 
 #define BAUDRATE 115200
 
-#define DEBUG_PORT Serial
-#define ELM_PORT BLESerial
-
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 240
 #define FONT_SIZE 2
@@ -47,15 +44,15 @@ void handleError(const char* errorMessage) {
 }
 
 void initBLE() {
-  const char* deviceName = "OBDBLE";
-  DEBUG_PORT.begin(BAUDRATE);
-  ELM_PORT.begin((char*)deviceName);
+  const char* name = "OBDBLE";
+  char localName[] = "OBDLink CX";
+  BLESerial.begin(localName, "FFF0", "FFF1", "FFF2");
 
-  if (!ELM_PORT.connect()) {
+  if (!BLESerial.connect(name)) {
     handleError("Couldn't connect to ELM327 - Phase 1");
   }
 
-  if (!myELM327.begin(ELM_PORT, true, 2000)) {
+  if (!myELM327.begin(BLESerial, true, 2000, '6', 128, 200)) {
     handleError("Couldn't connect to ELM327 - Phase 2");
   }
 
@@ -110,7 +107,7 @@ void setup() {
 
   Serial.println("Initializing BLE...");
 
-  //initBLE();
+  initBLE();
 
   pinMode(BUTTON_LEFT, INPUT_PULLUP);
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);
