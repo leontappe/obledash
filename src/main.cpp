@@ -15,7 +15,7 @@
 #define BUTTON_CENTER 27
 
 typedef struct DisplayData {
-  float_t rpm = 0;
+  uint32_t rpm = 0;
   float_t ambientTemp = 0;
   float_t currentFuelConsumption = 0;
 } display_data_t;
@@ -126,28 +126,13 @@ void loop() {
 
   float tempRPM = myELM327.rpm();
   if (myELM327.nb_rx_state == ELM_SUCCESS) {
-    displayData.rpm = (float_t)tempRPM;
+    displayData.rpm = (uint32_t)tempRPM;
     data.rpm = displayData.rpm;
+
+    drawData(data);
   } else if (myELM327.nb_rx_state != ELM_GETTING_MSG) {
     myELM327.printError();
   }
 
-  float tempAmbientTemp = myELM327.ambientAirTemp();
-  if (myELM327.nb_rx_state == ELM_SUCCESS) {
-    displayData.ambientTemp = (float_t)tempAmbientTemp;
-    data.ambientTemp = tempAmbientTemp;
-  } else if (myELM327.nb_rx_state != ELM_GETTING_MSG) {
-    myELM327.printError();
-  }
-
-  float tempFuelRate = myELM327.fuelRate();
-  if (myELM327.nb_rx_state == ELM_SUCCESS) {
-    displayData.currentFuelConsumption = (float_t)tempFuelRate;
-    data.currentFuelConsumption = displayData.currentFuelConsumption;
-  } else if (myELM327.nb_rx_state != ELM_GETTING_MSG) {
-    myELM327.printError();
-  }
-
-  drawData(data);
-  delay(50);
+  delay(1000);
 }
