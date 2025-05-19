@@ -1,6 +1,0 @@
-[submodule "lib/obd-ble-serial"]
-	path = lib/obd-ble-serial
-	url = https://github.com/vdvornichenko/obd-ble-serial.git
-[submodule "boards"]
-	path = boards
-	url = https://github.com/rzeldent/platformio-espressif32-sunton.git

@@ -1,0 +1,64 @@
+[
+  {
+    "type": 0,
+    "valueType": "float",
+    "enabled": true,
+    "visible": true,
+    "interval": 30000,
+    "name": "batteryVoltage",
+    "description": "Battery Voltage",
+    "icon": "battery",
+    "unit": "V",
+    "deviceClass": "voltage",
+    "measurement": true,
+    "diagnostic": false,
+    "readFunc": "batteryVoltage",
+    "value": {}
+  },
+  {
+    "type": 0,
+    "valueType": "int",
+    "enabled": true,
+    "visible": true,
+    "interval": 1000,
+    "name": "soc",
+    "description": "State of Charge",
+    "icon": "battery",
+    "unit": "%",
+    "deviceClass": "battery",
+    "measurement": true,
+    "diagnostic": false,
+    "pid": {
+      "service": 34,
+      "pid": 652,
+      "numResponses": 1,
+      "numExpectedBytes": 1,
+      "scaleFactor": "100.0 / 255.0",
+      "bias": 0
+    },
+    "value": {}
+  },
+  {
+    "type": 0,
+    "valueType": "int",
+    "enabled": true,
+    "visible": true,
+    "interval": 100,
+    "name": "speed",
+    "description": "Kilometer per Hour",
+    "icon": "speedometer",
+    "unit": "km/h",
+    "deviceClass": "speed",
+    "measurement": true,
+    "diagnostic": false,
+    "pid": {
+      "service": 34,
+      "pid": 62477,
+      "numResponses": 1,
+      "numExpectedBytes": 1,
+      "scaleFactor": "1",
+      "bias": 0
+    },
+    "value": {}
+  }
+]

@@ -1,0 +1,323 @@
+<!--
+  ~ This program is free software; you can use it, redistribute it
+  ~ and / or modify it under the terms of the GNU General Public License
+  ~ (GPL) as published by the Free Software Foundation; either version 3
+  ~ of the License or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful, but
+  ~  WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~  GNU General Public License for more details.
+  ~
+  ~  You should have received a copy of the GNU General Public License
+  ~  along with this program, in a file called gpl.txt or license.txt.
+  ~  If not, write to the Free Software Foundation Inc.,
+  ~  59 Temple Place - Suite 330, Boston, MA  02111-1307 USA
+  -->
+
+<ng-template #deviceName let-r="result" let-t="term">
+    <ngb-highlight [result]="r.name + ' (' + r.mac + ')'" [term]="t"></ngb-highlight>
+</ng-template>
+
+<div id="settings">
+    <div class="d-flex my-2 justify-content-end">
+        <div class="btn-group">
+            <a class="btn btn-primary" [href]="downloadHref" download="settings.json" (click)="generateDownload()">&#8675;
+                Download</a>
+            <div class="btn btn-secondary p-0">
+                <label for="states-upload" class="d-inline-block py-1 px-2">&#8673; Upload</label>
+                <input type="file" id="states-upload" name="states-upload" accept="application/json"
+                       (change)="onFileChange($event)" [hidden]="true"
+                >
+            </div>
+        </div>
+    </div>
+    <form novalidate (ngSubmit)="onSubmit(form)" [formGroup]="form">
+        @if (hasBattery) {
+            <fieldset [formGroup]="general" class="mt-0">
+                <legend>General</legend>
+                <div class="row mb-2">
+                    <label for="sleepTimeout" class="col-sm-2 control-label">Auto sleep timeout (sec)</label>
+                    <div class="col-sm-10">
+                        <input formControlName="sleepTimeout" type="number" id="sleepTimeout" autocapitalize="off"
+                               autocorrect="off"
+                               placeholder="Auto shutdown timeout"
+                               class="form-control"
+                               [ngClass]="{'is-invalid': general.controls.sleepTimeout.errors}"
+                        >
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label for="sleepDuration" class="col-sm-2 control-label">Sleep duration (sec)</label>
+                    <div class="col-sm-10">
+                        <input formControlName="sleepDuration" type="number" id="sleepDuration" autocapitalize="off"
+                               autocorrect="off"
+                               placeholder="Sleep duration"
+                               class="form-control"
+                               [ngClass]="{'is-invalid': general.controls.sleepDuration.errors}"
+                        >
+                    </div>
+                </div>
+            </fieldset>
+        }
+        <fieldset [formGroup]="wifi" [ngClass]="{'mt-0': !hasBattery}">
+            <legend>WiFi Access Point</legend>
+            <div class="row mb-2">
+                <label for="ssid" class="col-sm-2 control-label">SSID</label>
+                <div class="col-sm-10">
+                    <input formControlName="ssid" type="text" id="ssid" autocapitalize="off" autocorrect="off"
+                           placeholder="SSID"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': wifi.controls.ssid.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="wifiPass" class="col-sm-2 control-label">Password</label>
+                <div class="col-sm-10">
+                    <input formControlName="password" type="password" id="wifiPass" autocapitalize="off"
+                           autocorrect="off"
+                           placeholder="Password"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': wifi.controls.password.errors}"
+                    >
+                </div>
+            </div>
+        </fieldset>
+        <fieldset [formGroup]="mobile">
+            <legend>Mobile</legend>
+            <div *ngIf="isNetworkModeAllowed()" class="row mb-2">
+                <label for="networkMode" class="col-sm-2 col-form-label">Network Mode</label>
+                <div class="col-sm-10">
+                    <select class="form-control form-select" id="networkMode"
+                            formControlName="networkMode"
+                            [ngClass]="{'is-invalid': mobile.controls.networkMode.errors}">
+                        <option *ngFor="let mode of getNetworkModes()" [ngValue]="mode.value">{{ mode.key }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="pin" class="col-sm-2 control-label">Sim PIN</label>
+                <div class="col-sm-10">
+                    <input formControlName="pin" type="text" id="pin" autocapitalize="off" autocorrect="off"
+                           placeholder="PIN"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mobile.controls.pin.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="apn" class="col-sm-2 control-label">Access Point Name</label>
+                <div class="col-sm-10">
+                    <input formControlName="apn" type="text" id="apn" autocapitalize="off" autocorrect="off"
+                           placeholder="APN"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mobile.controls.apn.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="mobileUser" class="col-sm-2 control-label">Username</label>
+                <div class="col-sm-10">
+                    <input formControlName="username" type="text" id="mobileUser" autocapitalize="off" autocorrect="off"
+                           placeholder="Username"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mobile.controls.username.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="mobilePass" class="col-sm-2 control-label">Password</label>
+                <div class="col-sm-10">
+                    <input formControlName="password" type="password" id="mobilePass" autocapitalize="off"
+                           autocorrect="off"
+                           placeholder="Password"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mobile.controls.password.errors}"
+                    >
+                </div>
+            </div>
+        </fieldset>
+        <fieldset [formGroup]="obd2">
+            <legend>OBD2/ELM 327 Device</legend>
+            <div class="row mb-2">
+                <label for="obd2Name" class="col-sm-2 control-label">Name</label>
+                <div class="col-sm-10">
+                    <input formControlName="name" type="text" id="obd2Name" autocapitalize="off" autocorrect="off"
+                           placeholder="OBDII"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': obd2.controls.name.dirty && obd2.controls.name.errors}"
+                           [ngbTypeahead]="searchDevice"
+                           [resultTemplate]="deviceName"
+                           (focus)="focus$.next($any($event).target.value)"
+                           (click)="click$.next($any($event).target.value)"
+                           (selectItem)="onSelectDevice($event)"
+                           #devTypeahead="ngbTypeahead"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="obd2Mac" class="col-sm-2 control-label">MAC Address</label>
+                <div class="col-sm-10">
+                    <input formControlName="mac" type="text" id="obd2Mac" autocapitalize="off" autocorrect="off"
+                           placeholder="11:22:33:44:af:fe"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': obd2.controls.mac.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="protocol" class="col-sm-2 col-form-label">Protocol</label>
+                <div class="col-sm-10">
+                    <select class="form-control form-select" id="protocol" formControlName="protocol"
+                            [ngClass]="{'is-invalid': obd2.controls.protocol.errors}">
+                        <option *ngFor="let proto of getOBDProtocols()" [value]="proto.value">{{ proto.key }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="offset-sm-2 col-sm-10">
+                <div class="d-flex justify-content-between">
+                    <div class="d-flex">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" value="true" id="checkPIDSupport" formControlName="checkPIDSupport"
+                                   class="form-check-input">
+                            <label for="checkPIDSupport" class="form-check-label">check if PID is supported</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" value="true" id="specifyNumResponses"
+                                   formControlName="specifyNumResponses"
+                                   class="form-check-input">
+                            <label for="specifyNumResponses" class="form-check-label">Specify number of
+                                responses</label>
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" value="true" id="debug" formControlName="debug"
+                               class="form-check-input">
+                        <label for="debug" class="form-check-label">Debug Mode</label>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset [formGroup]="mqtt">
+            <legend>MQTT Broker</legend>
+            <div class="row mb-2">
+                <label for="hostname" class="col-sm-2 control-label">Protocol/Hostname/Port</label>
+                <div class="col-sm-2 pe-md-1">
+                    <select class="form-control form-select" id="mqttProtocol" formControlName="protocol"
+                            [ngClass]="{'is-invalid': mqtt.controls.protocol.errors}">
+                        <option *ngFor="let proto of getMQTTProtocols()" [ngValue]="proto.value">{{ proto.key }}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-sm-6 ps-md-1 pe-md-1">
+                    <input formControlName="hostname" type="text" id="hostname" autocapitalize="off"
+                           autocorrect="off"
+                           placeholder="Hostname"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mqtt.controls.hostname.errors}"
+                    >
+                </div>
+                <div class="col-sm-2 ps-md-1">
+                    <input formControlName="port" type="number" id="port" autocapitalize="off"
+                           placeholder="Port"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mqtt.controls.port.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="offset-sm-2 col-sm-10">
+                    <div class="form-check">
+                        <input type="checkbox" value="true" id="secure" formControlName="secure"
+                               class="form-check-input">
+                        <label for="secure" class="form-check-label">use TLS/SSL</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="mqttUser" class="col-sm-2 control-label">Username</label>
+                <div class="col-sm-10">
+                    <input formControlName="username" type="text" id="mqttUser" autocapitalize="off" autocorrect="off"
+                           placeholder="Username"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mqtt.controls.username.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="mqttPass" class="col-sm-2 control-label">Password</label>
+                <div class="col-sm-10">
+                    <input formControlName="password" type="password" id="mqttPass" autocapitalize="off"
+                           autocorrect="off"
+                           placeholder="Password"
+                           class="form-control"
+                           [ngClass]="{'is-invalid': mqtt.controls.password.errors}"
+                    >
+                </div>
+            </div>
+            <div class="row mb-2">
+                <label for="allowOffline" class="col-sm-2 control-label">Offline behaviour</label>
+                <div class="col-sm-10">
+                    <div class="form-check">
+                        <input type="checkbox" value="true" id="allowOffline" formControlName="allowOffline"
+                               class="form-check-input">
+                        <label for="allowOffline" class="form-check-label">Allow offline</label>
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="no-space">
+                <legend>Send Interval</legend>
+                <div class="row mb-2">
+                    <label for="discoveryInterval" class="col-sm-2 col-form-label">Resend Discovery</label>
+                    <div class="col-sm-10">
+                        <select class="form-control form-select" id="discoveryInterval"
+                                formControlName="discoveryInterval"
+                                [ngClass]="{'is-invalid': mqtt.controls.discoveryInterval.errors}">
+                            <option *ngFor="let interval of discoveryIntervals" [value]="interval">{{ interval }}&nbsp;sec
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label for="dataInterval" class="col-sm-2 col-form-label">Data</label>
+                    <div class="col-sm-10">
+                        <select class="form-control form-select" id="dataInterval" formControlName="dataInterval"
+                                [ngClass]="{'is-invalid': mqtt.controls.dataInterval.errors}">
+                            <option *ngFor="let interval of dataIntervals" [value]="interval">{{ interval }}&nbsp;sec
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label for="diagnosticInterval" class="col-sm-2 col-form-label">Diagnostic Data</label>
+                    <div class="col-sm-10">
+                        <select class="form-control form-select" id="diagnosticInterval"
+                                formControlName="diagnosticInterval"
+                                [ngClass]="{'is-invalid': mqtt.controls.diagnosticInterval.errors}">
+                            <option *ngFor="let interval of diagnosticIntervals" [value]="interval">{{ interval }}&nbsp;sec
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label for="locationInterval" class="col-sm-2 col-form-label">GSM/GPS Position</label>
+                    <div class="col-sm-10">
+                        <select class="form-control form-select" id="locationInterval"
+                                formControlName="locationInterval"
+                                [ngClass]="{'is-invalid': mqtt.controls.locationInterval.errors}">
+                            <option *ngFor="let interval of locationIntervals" [ngValue]="interval">{{ interval }}&nbsp;sec
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </fieldset>
+
+        <div class="d-flex justify-content-end mb-2">
+            <input type="submit" class="btn btn-primary me-2" value="Save" [disabled]="!form.valid">
+        </div>
+    </form>
+</div>
