@@ -1,40 +1,20 @@
-# OBD2 to MQTT for Home Assistant
+# A car dashboard based on OBD2-MQTT
 
 ## What you need?
 
-* an installed Home Assistant with Mosquitto Broker
 * (optional) an installed PlatformIO
 * (optional) an installed Node.js and NPM
-* a ESP32 with [SIM800L](https://de.aliexpress.com/item/33045221960.html)
-  or [A7670](https://de.aliexpress.com/item/1005006477044118.html)
-    * (optional) [RP-SMA to IPX cable](https://www.amazon.de/dp/B0B9RXDLNN)
-    * (optional) [Antenna](https://www.amazon.de/dp/B0B2DCXL5N) (work's for me) or other
-    * (optional) a 3D Printer for the [case](3d-files)
+* a ESP32 CYD
 * a [ELM327 OBD Bluetooth Adapter](https://www.amazon.de/gp/product/B0BG4W6MLD) or any other
     * if you want to use [this](https://de.aliexpress.com/item/1005005775562398.html) cheap adapter, you should set the
       right connection protocol or have patience
-* a SIM Card - I use one
-  from [fraenk](https://fraenk.page.link/?link=https%3A%2F%2Ffraenk.de%2Fdeeplink%2Fmgm%3FfriendCode%3DRENA45&apn=de.congstar.fraenk&amv=1040000&imv=1.4&isi=1493980266&ibi=de.congstar.fraenk&ius=fraenk&ofl=https%3A%2F%2Ffraenk.de)
 * and the most important thing, a car
 
-## Supported Devices
+## Supported Devices                                                                                                                       |
 
-| Product                                                                         | Environment                                                          | SSL/TLS                       | Case                                                                                                                                                                                                                    |
-|---------------------------------------------------------------------------------|----------------------------------------------------------------------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [T-Call SIM800L](https://lilygo.cc/products/t-call-v1-4?variant=42868250869941) | SIM800L_IP5306_VERSION_20190610 <br/>SIM800L_IP5306_VERSION_20200811 | ❌ (only SSL 2/3, TLS 1.0/1.2) | [Case](3d-files/README.md#for-sim800l-boards)                                                                                                                                                                           |
-| T-Call SIM800C                                                                  | SIM800L_AXP192_VERSION_20200327<br/>SIM800C_AXP192_VERSION_20200609  | ❌ (only SSL 2/3, TLS 1.0/1.2) | [Case](3d-files/README.md#for-sim800l-boards)                                                                                                                                                                           |
-| [T-Call A7670](https://lilygo.cc/products/t-call-v1-4?variant=43440642719925)   | T-Call-A7670X-V1-0<br/>T-Call-A7670X-V1-1                            | ✅                             | [Case with internal GPS/LTE](3d-files/README.md#for-a7670-boards-with-included-gps-antenna)<br/>[Case with external GPS/LTE](3d-files/README.md#for-a7670-boards-with-external-gps4g-antenna)                           |
-| [T-A7670E/G/SA R2](https://lilygo.cc/products/t-sim-a7670e)                     | T-A7670X                                                             | ✅                             | [Case with internal GPS/LTE](3d-files/README.md#for-a7670-boards-with-battery-and-internal-gps4g-antenna)<br/>[Case with external GPS/LTE](3d-files/README.md#for-a7670-boards-with-battery-and-external-gps4g-antenna) |
-| [T-A7670E/G/SA R2 without GPS](https://lilygo.cc/products/t-sim-a7670e)         | T-A7670X-NO-GPS                                                      | ✅                             | [Case](3d-files/README.md#for-a7670-boards-with-battery-and-internal-gps4g-antenna)                                                                                                                                     |
-| [T-A7670G with GPS Shield](https://lilygo.cc/products/t-sim-a7670e)             | T-A7670X-GPS-SHIELD                                                  | ✅                             | [Case with internal GPS/LTE](3d-files/README.md#for-a7670-boards-with-battery-and-internal-gps4g-antenna)<br/>[Case with external GPS/LTE](3d-files/README.md#for-a7670-boards-with-battery-and-external-gps4g-antenna) |
-| [Waveshare ESP32 S3 A7670E](https://www.waveshare.com/esp32-s3-a7670e-4g.htm)   | WS-A7670E_BLE (BLE only)                                             | ✅                             |                                                                                                                                                                                                                         |
+ - ESP32-2432S028R
 
 ## Getting started
-
-### Upload via Web Installer (ESP Web Tools)
-
-If you don't want to install PlatformIO and compile by your own, use
-the [Web Installer](https://adlerre.github.io/obd2-mqtt/).
 
 ### Update Settings or Firmware & Filesystem
 
@@ -87,9 +67,6 @@ curl -X PUT -H "Content-Type: application/json" -d @settings.json http://192.168
 
 Configure Wi-Fi, Mobile settings according to your needs. Set the detected ELM327 device and optionally select the
 protocol for faster initialization.<br />
-Set up the MQTT configuration with your data. __If you want to use TLS/SSL on a SIM800 device, you need to know that
-only SSL 2/3 and TLS 1.0 are supported.__
-For devices with a battery, you can set the automatic sleep timeout (no data/ignition off) and the sleep duration.
 
 ## Configure Sensors
 
@@ -126,22 +103,12 @@ Diagnostic Output on all profiles:
 * Signal Quality
 * Uptime
 
-<p>
-<img width="200" alt="Sensors1" src="assets/obd2-mqtt-ha-01.png">
-<img width="200" alt="Sensors2" src="assets/obd2-mqtt-ha-02.png">
-</p>
-
 More profiles can be found [here](profiles).
 
 ### Custom OBD States
 
 On the OBD tab you can adjust the required states and upload and/or download the current profile.
 There two types of states, __READ__ and __CALC__, both can be a value type of __BOOL__, __FLOAT__ or __INT__.
-
-<p>
-<img width="200" alt="OBD1" src="assets/obd2-mqtt-obd-01.png">
-<img width="200" alt="OBD2" src="assets/obd2-mqtt-obd-02.png">
-</p>
 
 Options:
 
