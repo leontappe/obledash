@@ -25,21 +25,6 @@ export interface WiFiSettings {
     password?: string;
 }
 
-export enum NetworkMode {
-    AUTO = 2,
-    GSM = 13,
-    WCDMA = 14,
-    LTE = 38,
-}
-
-export interface MobileSettings {
-    networkMode?: NetworkMode;
-    pin?: string;
-    apn: string;
-    username?: string;
-    password?: string;
-}
-
 export enum OBD2Protocol {
     AUTOMATIC = "0",
     SAE_J1850_PWM_41_KBAUD = "1",
@@ -63,31 +48,10 @@ export interface OBD2Settings {
     protocol?: OBD2Protocol;
 }
 
-export enum MQTTProtocol {
-    MQTT = 0,
-    WEBSOCKET = 1,
-}
-
-export interface MQTTSettings {
-    protocol?: MQTTProtocol;
-    hostname: string;
-    port?: number;
-    secure?: boolean;
-    username?: string;
-    password?: string;
-    allowOffline?: boolean;
-    dataInterval?: number;
-    diagnosticInterval?: number;
-    discoveryInterval?: number;
-    locationInterval?: number;
-}
-
 export interface Settings {
     general?: GeneralSettings;
     wifi?: WiFiSettings;
-    mobile?: MobileSettings;
     obd2?: OBD2Settings;
-    mqtt?: MQTTSettings;
 }
 
 export const dataIntervals = [1, 3, 5];

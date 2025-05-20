@@ -40,13 +40,7 @@ export class MockApiService {
         return of(testSettings);
     }
 
-    hasBattery() {
-        return of({hasBattery: true})
-    }
-
     updateSettings(settings: Settings) {
-        expect(settings.mobile?.apn).toBe("apn.test.provider");
-        expect(settings.mqtt?.hostname).toBe("broker.obd2-mqtt.test");
         return of(settings);
     }
 

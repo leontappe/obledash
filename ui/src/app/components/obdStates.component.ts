@@ -29,7 +29,6 @@ import {
 import {
     BuildInExpressionFuncs,
     BuildInExpressionVars,
-    DeviceClasses,
     NamedItem,
     OBDState,
     OBDStateType,
@@ -248,14 +247,6 @@ export class OBDStatesComponent implements OnInit {
                 key: key,
                 value: ValueTypes[key as keyof typeof ValueTypes]
             }));
-    }
-
-    getDeviceClasses(): Array<{ name: string, description: string }> {
-        return DeviceClasses;
-    }
-
-    getDeviceClassUnits(name: string | undefined): Array<string> {
-        return name && DeviceClasses.find(dc => dc.name.indexOf(name) !== -1)?.units || [];
     }
 
     getReadFunctions(): Array<NamedItem> {

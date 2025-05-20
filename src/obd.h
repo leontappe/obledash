@@ -32,7 +32,7 @@
 
 // set default adapter name
 #ifndef OBD_ADP_NAME
-#define OBD_ADP_NAME        "OBDII"
+#define OBD_ADP_NAME        "OBDBLE"
 #endif
 
 #define STATES_FILE          "/states.json"

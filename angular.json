@@ -120,5 +120,8 @@
     "@schematics/angular:directive": {
       "prefix": "ui"
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

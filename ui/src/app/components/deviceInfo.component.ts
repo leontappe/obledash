@@ -16,7 +16,7 @@
  */
 
 import { Component, OnInit } from "@angular/core";
-import { DTCs, ModemInfo, WifiInfo } from "../definitions";
+import { DTCs, WifiInfo } from "../definitions";
 import { ApiService } from "../services/api.service";
 
 @Component({
@@ -30,8 +30,6 @@ export class DeviceInfoComponent implements OnInit {
 
     wifiInfo: WifiInfo | undefined;
 
-    modemInfo: ModemInfo | undefined;
-
     dtcs: DTCs | undefined;
 
     constructor(private $api: ApiService) {
@@ -40,7 +38,6 @@ export class DeviceInfoComponent implements OnInit {
     ngOnInit(): void {
         this.$api.version().subscribe(ver => this.version = ver);
         this.$api.wifiInfo().subscribe((wi) => this.wifiInfo = wi);
-        this.$api.modemInfo().subscribe((mi) => this.modemInfo = mi);
         this.$api.dtcs().subscribe((d: DTCs) => this.dtcs = d);
     }
 

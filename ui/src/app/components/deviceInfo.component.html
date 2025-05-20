@@ -37,32 +37,6 @@
         </dl>
     </fieldset>
 
-    <fieldset *ngIf="modemInfo">
-        <legend>Modem Info</legend>
-        <dl class="row">
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{ modemInfo.name }}</dd>
-
-            <!--    <dt class="col-sm-3">Info</dt>-->
-            <!--    <dd class="col-sm-9">{{ modemInfo.info }}</dd>-->
-
-            <dt class="col-sm-3">Signal Quality</dt>
-            <dd class="col-sm-9">{{ calcRSSI(modemInfo.signalQuality) }} dBm</dd>
-
-            <dt class="col-sm-3">IP</dt>
-            <dd class="col-sm-9">{{ modemInfo.ip }}</dd>
-
-            <dt class="col-sm-3">IMEI</dt>
-            <dd class="col-sm-9">{{ modemInfo.IMEI }}</dd>
-
-            <dt class="col-sm-3">IMSI</dt>
-            <dd class="col-sm-9">{{ modemInfo.IMSI }}</dd>
-
-            <dt class="col-sm-3">CCID</dt>
-            <dd class="col-sm-9">{{ modemInfo.CCID }}</dd>
-        </dl>
-    </fieldset>
-
     <fieldset *ngIf="dtcs">
         <legend>Dagnostic Trouble Codes</legend>
         <dl class="row">

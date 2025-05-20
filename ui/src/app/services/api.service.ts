@@ -21,7 +21,6 @@ import {
     Configuration,
     DiscoveredDevices,
     DTCs,
-    ModemInfo,
     OBDState,
     OTAMode,
     Settings,
@@ -51,10 +50,6 @@ export class ApiService {
         return this.$http.get<WifiInfo>("/api/wifi");
     }
 
-    modemInfo() {
-        return this.$http.get<ModemInfo>("/api/modem");
-    }
-
     dtcs() {
         return this.$http.get<DTCs>("/api/DTCs");
     }
@@ -69,10 +64,6 @@ export class ApiService {
 
     states() {
         return this.$http.get<Array<OBDState>>("/api/states");
-    }
-
-    hasBattery() {
-        return this.$http.get<{ "hasBattery": boolean }>("/api/hasBattery");
     }
 
     updateStates(states: Array<OBDState>) {

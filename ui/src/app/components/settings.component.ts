@@ -26,8 +26,6 @@ import {
     DiscoveredDevices,
     discoveryIntervals,
     locationIntervals,
-    MQTTProtocol,
-    NetworkMode,
     OBD2Protocol,
     Settings,
     stripEmptyProps
@@ -56,20 +54,7 @@ import { DomSanitizer } from "@angular/platform-browser";
 })
 export class SettingsComponent implements OnInit {
 
-    private static DEVICE_WITH_NETWORK_MODE = [
-        "T-A7670X",
-        "T-A7670X_BLE",
-        "T-A7670X-NO-GPS",
-        "T-A7670X-NO-GPS_BLE",
-        "T-A7670X-GPS-SHIELD",
-        "T-A7670X-GPS-SHIELD_BLE",
-        "T-Call-A7670X-V1-0",
-        "T-Call-A7670X-V1-0_BLE",
-        "T-Call-A7670X-V1-1",
-        "T-Call-A7670X-V1-1_BLE",
-        "T-A7608X",
-        "T-A7608X_BLE"
-    ];
+    private static DEVICE_WITH_NETWORK_MODE = [];
 
     @ViewChild("devTypeahead", {static: true}) devTypeahead: NgbTypeahead;
 
@@ -77,19 +62,13 @@ export class SettingsComponent implements OnInit {
 
     discoveredDevices: DiscoveredDevices | undefined;
 
-    hasBattery: boolean | undefined;
-
     form: FormGroup;
 
     general: FormGroup;
 
     wifi: FormGroup;
 
-    mobile: FormGroup;
-
     obd2: FormGroup;
-
-    mqtt: FormGroup;
 
     focus$ = new Subject<string>();
 
@@ -114,13 +93,6 @@ export class SettingsComponent implements OnInit {
             ssid: new FormControl("", Validators.maxLength(64)),
             password: new FormControl("", [Validators.minLength(8), Validators.maxLength(32)])
         });
-        this.mobile = new FormGroup({
-            networkMode: new FormControl<number>(2, Validators.required),
-            pin: new FormControl("", [Validators.maxLength(4), Validators.pattern("^[0-9]{4}")]),
-            apn: new FormControl("", [Validators.required, Validators.maxLength(64)]),
-            username: new FormControl("", Validators.maxLength(32)),
-            password: new FormControl("", Validators.maxLength(32))
-        });
         this.obd2 = new FormGroup({
             name: new FormControl("", Validators.maxLength(64)),
             mac: new FormControl("", Validators.pattern(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)),
@@ -129,38 +101,16 @@ export class SettingsComponent implements OnInit {
             specifyNumResponses: new FormControl<boolean>(true),
             protocol: new FormControl(OBD2Protocol.AUTOMATIC),
         });
-        this.mqtt = new FormGroup({
-            protocol: new FormControl<number>(MQTTProtocol.MQTT),
-            hostname: new FormControl("", [
-                Validators.required,
-                Validators.maxLength(64),
-                Validators.pattern(
-                    /^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$/
-                )
-            ]),
-            port: new FormControl<number>(1883, [Validators.min(1), Validators.max(65384)]),
-            secure: new FormControl<boolean>(false),
-            username: new FormControl("", Validators.maxLength(32)),
-            password: new FormControl("", Validators.maxLength(32)),
-            allowOffline: new FormControl<boolean>(false),
-            dataInterval: new FormControl<number>(1),
-            diagnosticInterval: new FormControl<number>(30),
-            discoveryInterval: new FormControl<number>(1800),
-            locationInterval: new FormControl<number>(30)
-        });
 
         this.form = new FormGroup({
             general: this.general,
             wifi: this.wifi,
-            mobile: this.mobile,
             obd2: this.obd2,
-            mqtt: this.mqtt
         });
     }
 
     ngOnInit(): void {
         this.$api.configuration().subscribe((configuration: Configuration) => this.configuration = configuration);
-        this.$api.hasBattery().subscribe(res => this.hasBattery = res.hasBattery);
         this.$api.settings().subscribe(settings => this.form.patchValue(settings));
         this.$api.discoveredDevices()
             .pipe(catchError(() => of({} as DiscoveredDevices)))
@@ -172,15 +122,6 @@ export class SettingsComponent implements OnInit {
             SettingsComponent.DEVICE_WITH_NETWORK_MODE.indexOf(this.configuration.deviceType) !== -1 || false;
     }
 
-    getNetworkModes(): Array<{ key: string, value: number }> {
-        return Object.keys(NetworkMode)
-            .filter((k: any) => typeof k === "string" && isNaN(parseInt(k, 10)))
-            .map(key => ({
-                key: key,
-                value: NetworkMode[key as keyof typeof NetworkMode]
-            }));
-    }
-
     getOBDProtocols(): Array<{ key: string, value: string }> {
         return Object.keys(OBD2Protocol).map(key => ({
             key: key.replaceAll("_", " "),
@@ -188,14 +129,6 @@ export class SettingsComponent implements OnInit {
         }));
     }
 
-    getMQTTProtocols(): Array<{ key: string, value: number }> {
-        return Object.keys(MQTTProtocol)
-            .filter((k: any) => typeof k === "string" && isNaN(parseInt(k, 10)))
-            .map(key => ({
-                key: key,
-                value: MQTTProtocol[key as keyof typeof MQTTProtocol]
-            }));
-    }
 
     searchDevice: OperatorFunction<string, readonly DiscoveredDevice[]> = (text$: Observable<string>) => {
         const debouncedText$ = text$.pipe(debounceTime(200), distinctUntilChanged());
