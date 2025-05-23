@@ -1,7 +1,5 @@
 .PHONY: all
 
-all: build upload monitor
-
 build-firmware:
 	pio run -e cyd
 
@@ -18,8 +16,12 @@ upload-fs:
 
 upload: upload-firmware upload-fs
 
+deploy: build upload
+
 clean:
 	pio run -t clean
 
 monitor:
 	pio device monitor
+
+all: deploy monitor
