@@ -51,6 +51,8 @@
         "string": "cpp",
         "string_view": "cpp",
         "variant": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "unordered_set": "cpp",
+        "random": "cpp"
     }
 }

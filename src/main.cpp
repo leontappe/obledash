@@ -471,8 +471,17 @@ bool sendStaticDiagnosticData() {
 
 [[noreturn]] void outputTask(void* parameters) {
     for (;;) {
-        // UI loop
-        delay(100);
+
+        if (wifiAPInUse) {
+            delay(1000);
+            continue;
+        }
+
+        sendStaticDiagnosticData();
+        sendDiagnosticData();
+        sendOBDData();
+
+        delay(2000);
     }
 }
 
@@ -485,6 +494,13 @@ void setup() {
         DEBUG_PORT.println("LittleFS Mount Failed");
         return;
     }
+
+    // Test LittleFS and print free space
+    DEBUG_PORT.printf("LittleFS free space: %d bytes\n", LittleFS.totalBytes() - LittleFS.usedBytes());
+    DEBUG_PORT.printf("LittleFS used space: %d bytes\n", LittleFS.usedBytes());
+    DEBUG_PORT.printf("LittleFS total space: %d bytes\n", LittleFS.totalBytes());
+
+    bool success = false;
 
     Settings.readSettings(LittleFS);
     OBD.readStates(LittleFS);
