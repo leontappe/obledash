@@ -347,11 +347,11 @@ void onBTDevicesDiscovered(BTScanResults* btDeviceList) {
 
 bool sendOBDData() {
     const unsigned long start = millis();
-    bool allSendsSuccessed = false;
+    bool allSendsSucceeded = false;
 
     DEBUG_PORT.print("Send OBD data...");
 
-    // allSendsSuccessed |= mqtt.sendTopicUpdate(LWT_TOPIC, LWT_CONNECTED);
+    // allSendsSucceeded |= mqtt.sendTopicUpdate(LWT_TOPIC, LWT_CONNECTED);
 
     std::vector<OBDState*> states{};
     OBD.getStates([](const OBDState* state) {
@@ -382,41 +382,46 @@ bool sendOBDData() {
                 free(str);
             }
 
-            // allSendsSuccessed |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
+            DEBUG_PORT.printf("State %s: %s", state->getName(), std::string(tmp_char));
+
+            // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
         }
     } else {
-        allSendsSuccessed = true;
+        allSendsSucceeded = true;
     }
 
-    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSuccessed ? "done" : "failed", millis() - start);
+    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSucceeded ? "done" : "failed", millis() - start);
 
-    return allSendsSuccessed;
+    return allSendsSucceeded;
 }
 
 bool sendDiagnosticData() {
     const unsigned long start = millis();
-    bool allSendsSuccessed = false;
+    bool allSendsSucceeded = false;
     char tmp_char[50];
 
     DEBUG_PORT.print("Send diagnostic data...");
 
     sprintf(tmp_char, "%d", static_cast<int>(temperatureRead()));
-    // allSendsSuccessed |= mqtt.sendTopicUpdate("cpuTemp", std::string(tmp_char));
+    DEBUG_PORT.printf("Temperature: %s\n", tmp_char);
+    // allSendsSucceeded |= mqtt.sendTopicUpdate("cpuTemp", std::string(tmp_char));
 
     sprintf(tmp_char, "%lu", static_cast<long>(getESPHeapSize()));
-    // allSendsSuccessed |= mqtt.sendTopicUpdate("freeMem", std::string(tmp_char));
+    DEBUG_PORT.printf("Heap size: %s\n", tmp_char);
+    // allSendsSucceeded |= mqtt.sendTopicUpdate("freeMem", std::string(tmp_char));
 
     sprintf(tmp_char, "%lu", (millis() - startTime) / 1000);
-    // allSendsSuccessed |= mqtt.sendTopicUpdate("uptime", std::string(tmp_char));
+    DEBUG_PORT.printf("Uptime: %s\n", tmp_char);
+    // allSendsSucceeded |= mqtt.sendTopicUpdate("uptime", std::string(tmp_char));
 
-    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSuccessed ? "done" : "failed", millis() - start);
+    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSucceeded ? "done" : "failed", millis() - start);
 
-    return allSendsSuccessed;
+    return allSendsSucceeded;
 }
 
 bool sendStaticDiagnosticData() {
     const unsigned long start = millis();
-    bool allSendsSuccessed = false;
+    bool allSendsSucceeded = false;
 
     DEBUG_PORT.print("Send static diagnostic data...");
 
@@ -449,15 +454,17 @@ bool sendStaticDiagnosticData() {
                 free(str);
             }
 
-            // allSendsSuccessed |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
+            DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char));
+
+            // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
         }
     } else {
-        allSendsSuccessed = true;
+        allSendsSucceeded = true;
     }
 
-    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSuccessed ? "done" : "failed", millis() - start);
+    DEBUG_PORT.printf("...%s (%dms)\n", allSendsSucceeded ? "done" : "failed", millis() - start);
 
-    return allSendsSuccessed;
+    return allSendsSucceeded;
 }
 
 [[noreturn]] void readStatesTask(void* parameters) {
