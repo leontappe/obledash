@@ -236,7 +236,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
             fromJSON(state, doc);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
-            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
+            Serial.printf("added state variable %s to OBD states\n", state->getName());
         } else if (stateObj["valueType"] == "float") {
             auto *state = new OBDStateFloat(
                 stateObj["type"].as<obd::OBDStateType>(),
@@ -252,7 +252,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
             fromJSON(state, doc);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
-            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
+            Serial.printf("added state variable %s to OBD states\n", state->getName());
         } else if (stateObj["valueType"] == "int") {
             auto *state = new OBDStateInt(
                 stateObj["type"].as<obd::OBDStateType>(),
@@ -268,7 +268,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
             fromJSON(state, doc);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
-            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
+            Serial.printf("added state variable %s to OBD states\n", state->getName());
         }
     }
 }
