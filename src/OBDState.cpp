@@ -20,7 +20,11 @@
 #include <ExprParser.h>
 
 void *OBDState::operator new(const size_t size) {
-    return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (ptr == NULL) {
+        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);  // Fall back to any 8-bit capable memory
+    }
+    return ptr;
 }
 
 void OBDState::operator delete(void *ptr) {

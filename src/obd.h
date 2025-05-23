@@ -167,6 +167,10 @@ public:
 
     DTCs *getDTCs();
 
+    void printJSON(JsonDocument &doc);
+
+    void commitState(OBDState *state, JsonDocument &doc);
+
 #ifdef USE_BLE
     void onDevicesDiscovered(const std::function<void(BLEScanResultsSet *scanResult)> &callable);
 #else

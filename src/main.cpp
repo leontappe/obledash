@@ -502,8 +502,13 @@ void setup() {
 
     bool success = false;
 
-    Settings.readSettings(LittleFS);
-    OBD.readStates(LittleFS);
+    DEBUG_PORT.println("Reading settings...");
+    success = Settings.readSettings(LittleFS);
+    DEBUG_PORT.printf("Settings read %s\n", success ? "success" : "failed");
+
+    DEBUG_PORT.println("Reading OBD states...");
+    success = OBD.readStates(LittleFS);
+    DEBUG_PORT.printf("OBD states read %s\n", success ? "success" : "failed");
 
     // disable Watch Dog for Core 0 - should fix crashes
     disableCore0WDT();

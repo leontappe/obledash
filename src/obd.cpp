@@ -161,11 +161,11 @@ void OBDClass::fromJSON(T *state, JsonDocument &doc) {
             state->setPIDSettings(
                 doc["pid"]["service"].as<uint8_t>(),
                 doc["pid"]["pid"].as<uint16_t>(),
-                doc["pid"]["header"].as<uint16_t>(),
+                !doc["pid"]["header"].isNull() ? doc["pid"]["header"].as<uint16_t>() : 0,
                 doc["pid"]["numResponses"].as<uint8_t>(),
                 doc["pid"]["numExpectedBytes"].as<uint8_t>(),
                 !doc["pid"]["scaleFactor"].isNull() ? doc["pid"]["scaleFactor"].as<std::string>().c_str() : "1",
-                doc["pid"]["bias"].as<float>()
+                !doc["pid"]["bias"].isNull() ? doc["pid"]["bias"].as<float>() : 0.0f
             );
         }
     } else if (state->getType() == obd::CALC) {
@@ -193,11 +193,14 @@ bool OBDClass::readStates(FS &fs) {
     File file = fs.open(STATES_FILE, FILE_READ);
     if (file && !file.isDirectory()) {
         JsonDocument doc;
-        if (!deserializeJson(doc, file)) {
+        DeserializationError deserializeResult = deserializeJson(doc, file);
+        if (!deserializeResult) {
             readJSON(doc);
             success = true;
+            file.close();
         }
-        file.close();
+        Serial.println("Failed to deserialize file states.json for reading.");
+        Serial.println(deserializeResult.c_str());
     }
 
     return success;
@@ -217,6 +220,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
     clearStates();
     const JsonArray array = doc.as<JsonArray>();
     for (JsonDocument stateObj: array) {
+        printJSON(stateObj);
         if (stateObj["valueType"] == "bool") {
             auto *state = new OBDStateBool(
                 stateObj["type"].as<obd::OBDStateType>(),
@@ -228,8 +232,11 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["measurement"].as<bool>(),
                 stateObj["diagnostic"].as<bool>()
             );
-            fromJSON(state, stateObj);
+            Serial.printf("initalized state variable %s\n", state->getName());
+            fromJSON(state, doc);
+            Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
+            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
         } else if (stateObj["valueType"] == "float") {
             auto *state = new OBDStateFloat(
                 stateObj["type"].as<obd::OBDStateType>(),
@@ -241,8 +248,11 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["measurement"].as<bool>(),
                 stateObj["diagnostic"].as<bool>()
             );
-            fromJSON(state, stateObj);
+            Serial.printf("initalized state variable %s\n", state->getName());
+            fromJSON(state, doc);
+            Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
+            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
         } else if (stateObj["valueType"] == "int") {
             auto *state = new OBDStateInt(
                 stateObj["type"].as<obd::OBDStateType>(),
@@ -254,10 +264,18 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["measurement"].as<bool>(),
                 stateObj["diagnostic"].as<bool>()
             );
-            fromJSON(state, stateObj);
+            Serial.printf("initalized state variable %s\n", state->getName());
+            fromJSON(state, doc);
+            Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
+            Serial.printf("added state variable %s\n to OBD states\n", state->getName());
         }
     }
+}
+
+void OBDClass::printJSON(JsonDocument &doc) {
+    serializeJson(doc, Serial);
+    Serial.println();
 }
 
 void OBDClass::writeJSON(JsonDocument &doc) {

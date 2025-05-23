@@ -7,3 +7,5 @@
 node_modules
 package-lock.json
 .angular
+
+data/public
