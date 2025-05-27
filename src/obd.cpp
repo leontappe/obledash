@@ -187,7 +187,11 @@ void OBDClass::fromJSON(T *state, JsonDocument &doc) {
     state->setUpdateInterval(doc["interval"].as<long>());
 }
 
+#ifdef USE_SD
+bool OBDClass::readStates(SDLib::SDClass &fs) {
+#else
 bool OBDClass::readStates(FS &fs) {
+#endif
     bool success = false;
 
     File file = fs.open(STATES_FILE, FILE_READ);
@@ -290,7 +294,11 @@ void OBDClass::writeJSON(JsonDocument &doc) {
     }
 }
 
+#ifdef USE_SD
+bool OBDClass::writeStates(SDLib::SDClass &fs) {
+#else
 bool OBDClass::writeStates(FS &fs) {
+#endif
     bool success = false;
 
     File file = fs.open(STATES_FILE, FILE_WRITE);

@@ -15,7 +15,11 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307 USA
  */
 #include "http.h"
+#ifdef USE_SD
+#include <SD.h>
+#else
 #include <LittleFS.h>
+#endif
 #include <obd.h>
 
 #if OTA_ENABLED

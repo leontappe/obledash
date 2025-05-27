@@ -18,6 +18,10 @@
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
 
+#ifdef USE_SD
+#include <SD.h>
+#endif
+
 #ifndef OTA_ENABLED
 #define OTA_ENABLED false
 #endif

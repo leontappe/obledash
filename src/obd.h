@@ -22,8 +22,13 @@
 #endif
 
 #include <bitset>
-#include <FS.h>
 #include <OBDStates.h>
+
+#ifdef USE_SD
+#include <SD.h>
+#else
+#include <FS.h>
+#endif
 
 #include "ELMduino.h"
 
@@ -146,11 +151,19 @@ public:
 
     bool parseJSON(std::string &json);
 
+#ifdef USE_SD
+    bool readStates(SDLib::SDClass &fs);
+#else
     bool readStates(FS &fs);
+#endif
 
     std::string buildJSON();
 
+#ifdef USE_SD
+    bool writeStates(SDLib::SDClass &fs);
+#else
     bool writeStates(FS &fs);
+#endif
 
     void begin(const String &devName, const String &devMac, char protocol = AUTOMATIC, bool checkPidSupport = false,
                bool debug = false, bool specifyNumResponses = true);

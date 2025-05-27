@@ -16,7 +16,12 @@
  */
 #pragma once
 #include <ArduinoJson.h>
+
+#ifdef USE_SD
+#include <SD.h>
+#else
 #include <FS.h>
+#endif
 
 /**
  * @see https://arduinojson.org/v7/how-to/add-support-for-char/
@@ -251,13 +256,22 @@ public:
 
     MQTTSettings MQTT;
 
+#ifdef USE_SD
+    bool readSettings(SDLib::SDClass &fs);
+#else
     bool readSettings(fs::FS &fs);
+#endif
 
+#ifdef USE_SD
+    bool writeSettings(SDLib::SDClass &fs);
+#else
     bool writeSettings(fs::FS &fs);
+#endif
 
     std::string buildJson();
 
     bool parseJson(std::string json);
+
 };
 
 extern SettingsClass Settings;

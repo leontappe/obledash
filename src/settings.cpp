@@ -16,8 +16,12 @@
  */
 #include "settings.h"
 
-#include <FS.h>
 #include <ArduinoJson.h>
+#ifdef USE_SD
+#include <SD.h>
+#else
+#include <FS.h>
+#endif
 
 SettingsClass::SettingsClass() = default;
 
@@ -33,7 +37,11 @@ void SettingsClass::writeJson(JsonDocument &doc) {
     OBD2.writeJson(doc);
 }
 
+#ifdef USE_SD
+bool SettingsClass::readSettings(SDLib::SDClass &fs) {
+#else
 bool SettingsClass::readSettings(fs::FS &fs) {
+#endif
     bool success = false;
 
     File file = fs.open(SETTINGS_FILE, FILE_READ);
@@ -49,7 +57,11 @@ bool SettingsClass::readSettings(fs::FS &fs) {
     return success;
 }
 
+#ifdef USE_SD
+bool SettingsClass::writeSettings(SDLib::SDClass &fs) {
+#else
 bool SettingsClass::writeSettings(fs::FS &fs) {
+#endif
     bool success = false;
 
     File file = fs.open(SETTINGS_FILE, FILE_WRITE);

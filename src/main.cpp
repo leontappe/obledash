@@ -35,9 +35,15 @@
 #define MIN_VOLTAGE_LEVEL       3300
 #define LOW_VOLTAGE_LEVEL       3600            // Sleep shutdown voltage
 
+#ifdef USE_SD
+#include <SD.h>
+#include "SDFSAdapter.h"
+#define FILESYSTEM SD
+#else
 #include <LittleFS.h>
-
+#define FILESYSTEM LittleFS
 #define FORMAT_LITTLEFS_IF_FAILED true
+#endif
 
 #define DISCOVERED_DEVICES_FILE "/discovered_devices.json"
 
@@ -185,7 +191,7 @@ void startHttpServer() {
                     if (index + len == total) {
                         auto json = std::string(static_cast<const char*>(request->_tempObject), total);
                         if (Settings.parseJson(json)) {
-                            if (Settings.writeSettings(LittleFS)) {
+                            if (Settings.writeSettings(FILESYSTEM)) {
                                 request->send(200);
                             }
                         } else {
@@ -221,7 +227,7 @@ void startHttpServer() {
                     if (index + len == total) {
                         auto json = std::string(static_cast<const char*>(request->_tempObject), total);
                         if (OBD.parseJSON(json)) {
-                            if (OBD.writeStates(LittleFS)) {
+                            if (OBD.writeStates(FILESYSTEM)) {
                                 request->send(200);
                             }
                         } else {
@@ -250,7 +256,11 @@ void startHttpServer() {
         });
 
     server.on("/api/discoveredDevices", HTTP_GET, [](AsyncWebServerRequest* request) {
+#ifdef USE_BLE
+        SDFile file = SD.open(DISCOVERED_DEVICES_FILE);
+#else
         File file = LittleFS.open(DISCOVERED_DEVICES_FILE, FILE_READ);
+#endif
         if (file && !file.isDirectory()) {
             JsonDocument doc;
             if (!deserializeJson(doc, file)) {
@@ -283,8 +293,12 @@ void startHttpServer() {
             request->send(404);
         }
         });
-
+    
+#ifdef USE_BLE
+    server.begin(SD_FS_Wrapper);
+#else
     server.begin(LittleFS);
+#endif
 }
 
 void onOBDConnected() {
@@ -302,7 +316,7 @@ void onOBDConnectError() {
 void onBLEDevicesDiscovered(BLEScanResultsSet* btDeviceList) {
     JsonDocument devices;
 
-    File file = LittleFS.open(DISCOVERED_DEVICES_FILE, FILE_WRITE);
+    SDFile file = FILESYSTEM.open(DISCOVERED_DEVICES_FILE, 0);
     if (!file) {
         Serial.println("Failed to open file discovered_devices.json for writing.");
     }
@@ -497,7 +511,15 @@ void setup() {
 
     DEBUG_PORT.begin(115200);
 
-    if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
+#ifdef USE_SD
+    if (!FILESYSTEM.begin()) {
+        DEBUG_PORT.println("SD Card Mount Failed");
+        return;
+    }
+
+    DEBUG_PORT.println("SD Card Mount Success");
+#else
+    if (!FILESYSTEM.begin(FORMAT_LITTLEFS_IF_FAILED)) {
         DEBUG_PORT.println("LittleFS Mount Failed");
         return;
     }
@@ -506,15 +528,16 @@ void setup() {
     DEBUG_PORT.printf("LittleFS free space: %d bytes\n", LittleFS.totalBytes() - LittleFS.usedBytes());
     DEBUG_PORT.printf("LittleFS used space: %d bytes\n", LittleFS.usedBytes());
     DEBUG_PORT.printf("LittleFS total space: %d bytes\n", LittleFS.totalBytes());
+#endif
 
     bool success = false;
 
     DEBUG_PORT.println("Reading settings...");
-    success = Settings.readSettings(LittleFS);
+    success = Settings.readSettings(FILESYSTEM);
     DEBUG_PORT.printf("Settings read %s\n", success ? "success" : "failed");
 
     DEBUG_PORT.println("Reading OBD states...");
-    success = OBD.readStates(LittleFS);
+    success = OBD.readStates(FILESYSTEM);
     DEBUG_PORT.printf("OBD states read %s\n", success ? "success" : "failed");
 
     // disable Watch Dog for Core 0 - should fix crashes
