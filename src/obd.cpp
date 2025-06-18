@@ -174,13 +174,15 @@ void OBDClass::fromJSON(T *state, JsonDocument &doc) {
         }
     }
 
-    if (!doc["value"]["format"].isNull()) {
-        state->setValueFormat(doc["value"]["format"].as<std::string>().c_str());
-    }
-    if (!doc["value"]["func"].isNull()) {
-        setFormatFuncByName<T>(doc["value"]["func"].as<std::string>().c_str(), state);
-    } else if (!doc["value"]["expr"].isNull()) {
-        state->setValueFormatExpression(doc["value"]["expr"].as<std::string>().c_str());
+    if (!doc["value"].isNull()) {
+        if (!doc["value"]["format"].isNull()) {
+            state->setValueFormat(doc["value"]["format"].as<std::string>().c_str());
+        }
+        if (!doc["value"]["func"].isNull()) {
+            setFormatFuncByName<T>(doc["value"]["func"].as<std::string>().c_str(), state);
+        } else if (!doc["value"]["expr"].isNull()) {
+            state->setValueFormatExpression(doc["value"]["expr"].as<std::string>().c_str());
+        }
     }
 
     // is reset by setPIDSettings
@@ -233,7 +235,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
@@ -249,7 +251,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
@@ -265,7 +267,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
