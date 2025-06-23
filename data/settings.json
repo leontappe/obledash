@@ -1,5 +1,6 @@
 {
   "obd2": {
-    "name": "OBDBLE"
+    "name": "OBDBLE",
+    "protocol": "6"
   }
 }

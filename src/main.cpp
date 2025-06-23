@@ -359,11 +359,15 @@ bool sendOBDData() {
             state->isDiagnostic() && state->getUpdateInterval() == -1);
         }, states);
     if (!states.empty()) {
+        DEBUG_PORT.printf("Found %d states to send\n", states.size());
+
         for (auto& state : states) {
             char tmp_char[50];
             if (state->getLastUpdate() + state->getUpdateInterval() > millis()) {
                 continue;
             }
+
+            DEBUG_PORT.printf("Sending state %s: ", state->getName());
 
             if (state->valueType() == "int") {
                 auto* is = reinterpret_cast<OBDStateInt*>(state);
@@ -484,7 +488,7 @@ bool sendStaticDiagnosticData() {
             continue;
         }
 
-        sendStaticDiagnosticData();
+        //sendStaticDiagnosticData();
         sendDiagnosticData();
         sendOBDData();
 
