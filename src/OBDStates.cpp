@@ -189,6 +189,10 @@ OBDState *OBDStates::nextState() {
         }, readStates);
         sort(readStates.begin(), readStates.end(), compareStates);
 
+        if (readStates.empty()) {
+            return nullptr;
+        }
+
         OBDState &state = *readStates.at(0);
         if (state.getUpdateInterval() == -1 || state.getLastUpdate() + state.getUpdateInterval() < millis()) {
             // int aFreeInternalHeapSizeBefore = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
