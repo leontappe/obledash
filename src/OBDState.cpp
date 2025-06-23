@@ -512,6 +512,8 @@ char *TypedOBDState<T>::formatValue() {
     }
 
     char str[50];
+    memset(str, 0, sizeof(str)); // Initialize buffer
+
     if (strlen(this->valueFormatExpression) != 0) {
         ExprParser parser;
         parser.setVariableResolveFunction([&](const char *varName)-> double {

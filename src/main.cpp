@@ -363,32 +363,58 @@ bool sendOBDData() {
 
         for (auto& state : states) {
             char tmp_char[50];
+        memset(tmp_char, 0, sizeof(tmp_char)); // Initialize tmp_char
+
             if (state->getLastUpdate() + state->getUpdateInterval() > millis()) {
                 continue;
             }
 
             DEBUG_PORT.printf("Sending state %s...\n", state->getName());
 
-            if (state->valueType() == "int") {
+        if (strcmp(state->valueType(), "int") == 0) {
                 auto* is = reinterpret_cast<OBDStateInt*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
-            } else if (state->valueType() == "float") {
+            } else {
+                strncpy(tmp_char, "ErrorFmtInt", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else if (strcmp(state->valueType(), "float") == 0) {
                 auto* is = reinterpret_cast<OBDStateFloat*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
-            } else if (state->valueType() == "bool") {
+            } else {
+                strncpy(tmp_char, "ErrorFmtFlt", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else if (strcmp(state->valueType(), "bool") == 0) {
                 auto* is = reinterpret_cast<OBDStateBool*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
+            } else {
+                strncpy(tmp_char, "ErrorFmtBool", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else {
+            const char* unknown_type_msg = "UnknownType:";
+            strncpy(tmp_char, unknown_type_msg, sizeof(tmp_char) - 1);
+            tmp_char[sizeof(tmp_char) - 1] = '\0'; // ensure null termination
+            // Optionally append the actual valueType if it's short enough
+            // strncat(tmp_char, state->valueType(), sizeof(tmp_char) - strlen(tmp_char) - 1);
             }
 
-            DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char));
+        DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char).c_str());
 
-            // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
+        // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char).c_str());
         }
     } else {
         allSendsSucceeded = true;
@@ -437,30 +463,56 @@ bool sendStaticDiagnosticData() {
     if (!states.empty()) {
         for (auto& state : states) {
             char tmp_char[50];
+        memset(tmp_char, 0, sizeof(tmp_char)); // Initialize tmp_char
+
             if (state->getLastUpdate() + state->getUpdateInterval() > millis()) {
                 continue;
             }
 
-            if (state->valueType() == "int") {
+        if (strcmp(state->valueType(), "int") == 0) {
                 auto* is = reinterpret_cast<OBDStateInt*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
-            } else if (state->valueType() == "float") {
+            } else {
+                strncpy(tmp_char, "ErrorFmtInt", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else if (strcmp(state->valueType(), "float") == 0) {
                 auto* is = reinterpret_cast<OBDStateFloat*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
-            } else if (state->valueType() == "bool") {
+            } else {
+                strncpy(tmp_char, "ErrorFmtFlt", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else if (strcmp(state->valueType(), "bool") == 0) {
                 auto* is = reinterpret_cast<OBDStateBool*>(state);
                 char* str = is->formatValue();
-                strcpy(tmp_char, str);
+            if (str) {
+                strncpy(tmp_char, str, sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0'; // Ensure null termination
                 free(str);
+            } else {
+                strncpy(tmp_char, "ErrorFmtBool", sizeof(tmp_char) - 1);
+                tmp_char[sizeof(tmp_char) - 1] = '\0';
+            }
+        } else {
+            const char* unknown_type_msg = "UnknownType:";
+            strncpy(tmp_char, unknown_type_msg, sizeof(tmp_char) - 1);
+            tmp_char[sizeof(tmp_char) - 1] = '\0'; // ensure null termination
+            // Optionally append the actual valueType if it's short enough
+            // strncat(tmp_char, state->valueType(), sizeof(tmp_char) - strlen(tmp_char) - 1);
             }
 
-            DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char));
+        DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char).c_str());
 
-            // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
+        // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char).c_str());
         }
     } else {
         allSendsSucceeded = true;
