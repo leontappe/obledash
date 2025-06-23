@@ -231,7 +231,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
@@ -247,7 +247,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
@@ -263,7 +263,7 @@ void OBDClass::readJSON(JsonDocument &doc) {
                 stateObj["diagnostic"].as<bool>()
             );
             Serial.printf("initalized state variable %s\n", state->getName());
-            fromJSON(state, doc);
+            fromJSON(state, stateObj);
             Serial.printf("read into state variable %s\n", state->getName());
             addState(state);
             Serial.printf("added state variable %s to OBD states\n", state->getName());
