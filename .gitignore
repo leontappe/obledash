@@ -9,3 +9,5 @@ package-lock.json
 .angular
 
 data/public
+
+debug_logs
