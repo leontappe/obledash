@@ -188,22 +188,20 @@ void OBDClass::fromJSON(T *state, JsonDocument &doc) {
 }
 
 bool OBDClass::readStates(FS &fs) {
-    bool success = false;
-
     File file = fs.open(STATES_FILE, FILE_READ);
     if (file && !file.isDirectory()) {
         JsonDocument doc;
         DeserializationError deserializeResult = deserializeJson(doc, file);
         if (!deserializeResult) {
             readJSON(doc);
-            success = true;
             file.close();
+            return true;
         }
         Serial.println("Failed to deserialize file states.json for reading.");
         Serial.println(deserializeResult.c_str());
     }
 
-    return success;
+    return false;
 }
 
 std::string OBDClass::buildJSON() {
