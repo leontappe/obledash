@@ -185,14 +185,18 @@ OBDState *OBDStates::nextState() {
         std::vector<OBDState *> readStates{};
         getStates([](const OBDState *state) {
             bool isEnabled = state->isEnabled();
-            bool isCorrectType = (state->getType() == obd::READ || (state->getType() == obd::CALC && state->hasCalcExpression()));
-            bool isCorrectIntervalLogic = (state->getUpdateInterval() != -1 || (state->getUpdateInterval() == -1 && state->getLastUpdate() == 0));
+            bool isSupportedForRead = (state->getType() == obd::READ) ? state->isSupported() : true; // CALC states don't need PID support check
+            bool hasRequiredConfig = (state->getType() == obd::READ || (state->getType() == obd::CALC && state->hasCalcExpression())); // READ needs to be supported (implicit via isSupportedForRead), CALC needs expression
+            bool isDueForUpdate = (state->getUpdateInterval() != -1 || (state->getUpdateInterval() == -1 && state->getLastUpdate() == 0));
+
         #ifdef DEBUG_STATE_FILTERING
             if (!isEnabled) Serial.printf("State '%s' filtered: not enabled\n", state->getName());
-            if (isEnabled && !isCorrectType) Serial.printf("State '%s' filtered: wrong type/no expr (type: %d, hasExpr: %d)\n", state->getName(), state->getType(), state->hasCalcExpression());
-            if (isEnabled && isCorrectType && !isCorrectIntervalLogic) Serial.printf("State '%s' filtered: interval logic (interval: %ld, lastUpdate: %lu)\n", state->getName(), state->getUpdateInterval(), state->getLastUpdate());
+            else if (state->getType() == obd::READ && !isSupportedForRead) Serial.printf("State '%s' filtered: not supported by vehicle\n", state->getName());
+            else if (!hasRequiredConfig) Serial.printf("State '%s' filtered: missing required config (type: %d, CALC needs expr: %d)\n", state->getName(), state->getType(), state->hasCalcExpression());
+            else if (!isDueForUpdate) Serial.printf("State '%s' filtered: not due for update (interval: %ld, lastUpdate: %lu)\n", state->getName(), state->getUpdateInterval(), state->getLastUpdate());
         #endif
-            return isEnabled && isCorrectType && isCorrectIntervalLogic;
+
+            return isEnabled && isSupportedForRead && hasRequiredConfig && isDueForUpdate;
         }, readStates);
         sort(readStates.begin(), readStates.end(), compareStates);
 

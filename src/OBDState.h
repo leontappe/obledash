@@ -68,6 +68,7 @@ protected:
     long lastUpdate = 0;
 
     int8_t updateStatus = 0;
+    uint8_t consecutiveReadFailures = 0;
 
     void setPreviousUpdate(long timestamp);
 
