@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <numeric>
 
+// #define DEBUG_STATE_FILTERING // Uncomment for very verbose state filtering logs
+
 OBDStates::OBDStates(ELM327 *elm327) {
     this->elm327 = elm327;
 }
@@ -182,10 +184,19 @@ OBDState *OBDStates::nextState() {
     if (!states.empty() && elm327 != nullptr && elm327->elm_port) {
         std::vector<OBDState *> readStates{};
         getStates([](const OBDState *state) {
-            return state->isEnabled() &&
-                   (state->getType() ==  obd::READ || state->getType() ==  obd::CALC && state->hasCalcExpression()) &&
-                   (state->getUpdateInterval() != -1 || state->getUpdateInterval() == -1 && state->getLastUpdate() ==
-                    0);
+            bool isEnabled = state->isEnabled();
+            bool isSupportedForRead = (state->getType() == obd::READ) ? state->isSupported() : true; // CALC states don't need PID support check
+            bool hasRequiredConfig = (state->getType() == obd::READ || (state->getType() == obd::CALC && state->hasCalcExpression())); // READ needs to be supported (implicit via isSupportedForRead), CALC needs expression
+            bool isDueForUpdate = (state->getUpdateInterval() != -1 || (state->getUpdateInterval() == -1 && state->getLastUpdate() == 0));
+
+        #ifdef DEBUG_STATE_FILTERING
+            if (!isEnabled) Serial.printf("State '%s' filtered: not enabled\n", state->getName());
+            else if (state->getType() == obd::READ && !isSupportedForRead) Serial.printf("State '%s' filtered: not supported by vehicle\n", state->getName());
+            else if (!hasRequiredConfig) Serial.printf("State '%s' filtered: missing required config (type: %d, CALC needs expr: %d)\n", state->getName(), state->getType(), state->hasCalcExpression());
+            else if (!isDueForUpdate) Serial.printf("State '%s' filtered: not due for update (interval: %ld, lastUpdate: %lu)\n", state->getName(), state->getUpdateInterval(), state->getLastUpdate());
+        #endif
+
+            return isEnabled && isSupportedForRead && hasRequiredConfig && isDueForUpdate;
         }, readStates);
         sort(readStates.begin(), readStates.end(), compareStates);
 

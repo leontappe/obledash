@@ -19,6 +19,27 @@
 
 #include <ExprParser.h>
 
+#define MAX_CONSECUTIVE_READ_FAILURES 5
+
+// Helper function to convert nb_rx_state_t to string for logging
+// Placeholder - actual implementation would need ELMduino.h or knowledge of its enums
+const char* getRxStateString(nb_rx_state_t state) {
+    switch (state) {
+        case ELM_SUCCESS: return "ELM_SUCCESS";
+        case ELM_NO_DATA: return "ELM_NO_DATA";
+        case ELM_NO_RESPONSE: return "ELM_NO_RESPONSE";
+        case ELM_TIMEOUT_ERROR: return "ELM_TIMEOUT_ERROR";
+        case ELM_BUFFER_OVERFLOW: return "ELM_BUFFER_OVERFLOW";
+        case ELM_UNABLE_TO_CONNECT: return "ELM_UNABLE_TO_CONNECT";
+        case ELM_CAN_ERROR: return "ELM_CAN_ERROR";
+        case ELM_BUSY: return "ELM_BUSY";
+        case ELM_ERROR: return "ELM_ERROR";
+        case ELM_GETTING_MSG: return "ELM_GETTING_MSG";
+        // Add other cases as defined in ELMduino.h
+        default: return "UNKNOWN_RX_STATE";
+    }
+}
+
 void *OBDState::operator new(const size_t size) {
     void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (ptr == NULL) {
@@ -178,7 +199,10 @@ bool OBDState::isEnabled() const {
 }
 
 void OBDState::setEnabled(bool enable) {
-    this->enabled = enable;
+    if (this->enabled != enable) {
+        Serial.printf("State '%s': %s\n", this->name, enable ? "enabled" : "disabled");
+        this->enabled = enable;
+    }
 }
 
 OBDState *OBDState::withEnabled(const bool enable) {
@@ -204,7 +228,10 @@ bool OBDState::isProcessing() const {
 }
 
 void OBDState::setUpdateInterval(const long interval) {
-    this->updateInterval = interval;
+    if (this->updateInterval != interval) {
+        Serial.printf("State '%s': update interval set to %ld ms\n", this->name, interval);
+        this->updateInterval = interval;
+    }
 }
 
 long OBDState::getUpdateInterval() const {
@@ -352,13 +379,42 @@ TypedOBDState<T> *TypedOBDState<T>::withReadFunc(const std::function<T()> &func)
 template<typename T>
 void TypedOBDState<T>::readValue() {
     if (elm327 != nullptr && elm327->elm_port && this->type == obd::READ) {
-        if (!this->init && this->readFunction == nullptr) {
-            this->supported = this->checkPidSupport && isPIDSupported(this->service, this->pid) || true;
-            this->init = this->checkPidSupport && elm327->nb_rx_state == ELM_SUCCESS || true;
-        } else if (this->readFunction != nullptr) {
+        if (!this->init && this->readFunction == nullptr) { // Only perform check once if not a custom read function
+            if (this->checkPidSupport) {
+                // Query for PID support
+                bool pidIsActuallySupported = isPIDSupported(this->service, this->pid);
+                if (elm327->nb_rx_state == ELM_SUCCESS) { // Check if the support query itself was successful
+                    this->supported = pidIsActuallySupported;
+                    this->init = true; // Mark that support check has been performed
+                    if (!this->supported) {
+                        Serial.printf("State '%s': PID 0x%02X (Service 0x%02X) reported as NOT SUPPORTED by vehicle.\n", this->getName(), this->pid, this->service);
+                    } else {
+                        Serial.printf("State '%s': PID 0x%02X (Service 0x%02X) reported as SUPPORTED.\n", this->getName(), this->pid, this->service);
+                    }
+                } else {
+                    // The support check query itself failed (e.g., timeout)
+                    Serial.printf("State '%s': Failed to check PID support for PID 0x%02X (Service 0x%02X). ELM Status: %s. Assuming supported to allow query attempts.\n",
+                                  this->getName(), this->pid, this->service, getRxStateString(elm327->nb_rx_state));
+                    this->supported = true; // Default to supported if check fails
+                    this->init = true;      // Mark check as done to avoid retrying support check repeatedly
+                }
+            } else {
+                // checkPidSupport is false, so assume supported and initialized for data reading purposes
+                this->supported = true;
+                this->init = true;
+            }
+        } else if (this->readFunction != nullptr && !this->init) {
+            this->supported = true; // Custom read functions are assumed supported
             this->init = true;
         }
 
+        if (!this->supported && this->init) { // If init (support check done) and not supported
+            this->processing = false; // Ensure not stuck in processing
+            // No need to log here repeatedly, already logged when found unsupported
+            return; // Do not attempt to read value
+        }
+
+        // Proceed only if initialized and supported (or if support check wasn't required/done)
         if (this->init && this->supported) {
             if (!this->processing) {
                 if (this->header > 0 && !this->setHeader) {
@@ -393,17 +449,34 @@ void TypedOBDState<T>::readValue() {
                 }
 
                 this->lastUpdate = millis();
+                Serial.printf("State '%s': lastUpdate set to %lu (readValue success)\n", this->getName(), this->lastUpdate);
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
+                this->consecutiveReadFailures = 0; // Reset on success
             } else if (elm327->nb_rx_state == ELM_NO_DATA) {
-                this->value = 0;
+                this->value = 0; // Or keep old value, depending on desired behavior for NO_DATA
                 this->lastUpdate = millis();
+                Serial.printf("State '%s': lastUpdate set to %lu (readValue no data)\n", this->getName(), this->lastUpdate);
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
+                this->consecutiveReadFailures = 0; // Reset on NO_DATA as it's a valid (though empty) response
             } else if (elm327->nb_rx_state != ELM_GETTING_MSG) {
-                this->processing = false;
-                this->updateStatus = elm327->nb_rx_state;
+                // This is an actual error state
+                this->consecutiveReadFailures++;
+                this->updateStatus = elm327->nb_rx_state; // Store the error status
+                this->processing = false; // Stop processing for now
+
+                Serial.printf("State '%s': readValue failed. Status: %s (%d). Consecutive failures: %d\n",
+                              this->getName(), getRxStateString(this->updateStatus), this->updateStatus, this->consecutiveReadFailures);
+
+                if (this->consecutiveReadFailures >= MAX_CONSECUTIVE_READ_FAILURES) {
+                    Serial.printf("State '%s': Exceeded max read failures. Disabling state.\n", this->getName());
+                    this->setEnabled(false); // Auto-disable
+                    // Optionally, could also reset consecutiveReadFailures here if we want it to try again if re-enabled manually
+                }
+                // No lastUpdate is set on failure
             }
+            // Note: ELM_GETTING_MSG means the read is still in progress, so processing remains true and no status/value update.
 
             if (this->header > 0 && this->setHeader && !this->processing) {
                 if (elm327->sendCommand_Blocking(SET_ALL_TO_DEFAULTS) == ELM_SUCCESS) {
@@ -445,6 +518,7 @@ void TypedOBDState<T>::calcValue(const std::function<double(const char *)> &func
             Serial.println(parser.errormsg);
         }
         this->lastUpdate = millis();
+        Serial.printf("State '%s': lastUpdate set to %lu (calcValue)\n", this->getName(), this->lastUpdate);
         this->processing = false;
     }
 }

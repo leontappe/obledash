@@ -5,6 +5,128 @@
         "enabled": true,
         "visible": true,
         "interval": 100,
+        "name": "throttle",
+        "description": "Throttle",
+        "icon": "gauge",
+        "unit": "%",
+        "deviceClass": "",
+        "measurement": true,
+        "diagnostic": false,
+        "pid": {
+            "service": 1,
+            "pid": 17,
+            "numResponses": 1,
+            "numExpectedBytes": 1,
+            "scaleFactor": "100.0 / 255.0"
+        },
+        "value": {
+            "format": "%d"
+        }
+    },
+    {
+        "type": 0,
+        "valueType": "int",
+        "enabled": true,
+        "visible": true,
+        "interval": 100,
+        "name": "rpm",
+        "description": "Revolutions per minute",
+        "icon": "engine",
+        "unit": "",
+        "deviceClass": "",
+        "measurement": true,
+        "diagnostic": false,
+        "pid": {
+            "service": 1,
+            "pid": 12,
+            "numResponses": 1,
+            "numExpectedBytes": 2,
+            "scaleFactor": "1.0 / 4.0"
+        },
+        "value": {
+            "format": "%d"
+        }
+    },
+    {
+        "type": 0,
+        "valueType": "int",
+        "enabled": true,
+        "visible": true,
+        "interval": 100,
+        "name": "speed",
+        "description": "Kilometer per Hour",
+        "icon": "speedometer",
+        "unit": "km/h",
+        "deviceClass": "speed",
+        "measurement": true,
+        "diagnostic": false,
+        "pid": {
+            "service": 1,
+            "pid": 13,
+            "numResponses": 1,
+            "numExpectedBytes": 1,
+            "scaleFactor": "1"
+        },
+        "value": {
+            "format": "%d"
+        }
+    },
+    {
+        "type": 0,
+        "valueType": "int",
+        "enabled": true,
+        "visible": true,
+        "interval": 100,
+        "name": "engineCoolantTemp",
+        "description": "Engine Coolant Temperature",
+        "icon": "thermometer",
+        "unit": "°C",
+        "deviceClass": "temperature",
+        "measurement": true,
+        "diagnostic": false,
+        "pid": {
+            "service": 1,
+            "pid": 5,
+            "numResponses": 1,
+            "numExpectedBytes": 1,
+            "scaleFactor": "1",
+            "bias": -40
+        },
+        "value": {
+            "format": "%d"
+        }
+    },
+    {
+        "type": 0,
+        "valueType": "int",
+        "enabled": true,
+        "visible": true,
+        "interval": 100,
+        "name": "oilTemp",
+        "description": "Oil Temperature",
+        "icon": "thermometer",
+        "unit": "°C",
+        "deviceClass": "temperature",
+        "measurement": true,
+        "diagnostic": false,
+        "pid": {
+            "service": 1,
+            "pid": 92,
+            "numResponses": 1,
+            "numExpectedBytes": 1,
+            "scaleFactor": "1",
+            "bias": -40
+        },
+        "value": {
+            "format": "%d"
+        }
+    },
+    {
+        "type": 0,
+        "valueType": "int",
+        "enabled": true,
+        "visible": true,
+        "interval": 100,
         "name": "ambientAirTemp",
         "description": "Ambient Temperature",
         "icon": "thermometer",
