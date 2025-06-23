@@ -14,6 +14,23 @@
 
  - ESP32-2432S028R
 
+### ESP32-2432S028R On-Device Display
+
+For the ESP32-2432S028R (often referred to as ESP32-CYD - Cheap Yellow Display), this project supports utilizing its built-in 2.8-inch TFT LCD touchscreen to display OBD-II data directly.
+
+**Features:**
+*   **Direct Data Display:** Shows key vehicle statistics on the device's screen.
+*   **Touchscreen Interaction:** Allows scrolling through the list of displayed OBD-II states.
+*   **Dynamic Updates:** Values on the screen update in real-time as new data is received from the vehicle.
+*   **Configuration:** The states displayed are based on the `states.json` configuration, respecting the `visible` and `enabled` flags for each state. The description, value, and unit for each state are shown.
+
+**Technical Details:**
+*   The on-device UI is implemented using the LVGL (Light and Versatile Graphics Library).
+*   TFT_eSPI library is used for low-level display and touch driver interactions.
+*   This functionality is specific to the `cyd` build environment in `platformio.ini`. When compiling for this environment, the LVGL-based UI is enabled. Other environments will continue to use the web UI.
+
+The on-device display provides a convenient way to view car statistics without needing a separate device to access the web interface, making it ideal for an integrated dashboard solution.
+
 ## Getting started
 
 ### Update Settings or Firmware & Filesystem
