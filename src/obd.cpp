@@ -269,6 +269,8 @@ void OBDClass::readJSON(JsonDocument &doc) {
             Serial.printf("added state variable %s to OBD states\n", state->getName());
         }
     }
+
+    validateStates();
 }
 
 void OBDClass::printJSON(JsonDocument &doc) {
@@ -739,5 +741,55 @@ void OBDClass::onDevicesDiscovered(const std::function<void(BTScanResults *scanR
 std::string OBDClass::getConnectedBTAddress() const {
     return connectedBTAddress;
 }
+
+void OBDClass::validateStates() const {
+    Serial.println("Validating loaded OBD states configurations...");
+    int wellConfiguredStates = 0;
+    int statesWithWarnings = 0;
+
+    std::vector<OBDState*> currentStates;
+    // Use the parent class's method to get all states. The lambda gets a const OBDState*, so a const_cast might be needed
+    // if getStates isn't const-correct, or change the lambda. Let's assume getStates works with const*.
+    // Actually, OBDStates::getStates takes a non-const vector to fill, but the predicate takes const OBDState*.
+    // And `this->getStates` is fine as `validateStates` is a const method of OBDClass, which inherits OBDStates.
+    this->getStates([](const OBDState*){ return true; }, currentStates);
+
+    for (const auto& state : currentStates) {
+        bool currentProblematic = false;
+
+        // Log very short update intervals for enabled states
+        if (state->isEnabled() && state->getUpdateInterval() > 0 && state->getUpdateInterval() < 100) {
+            Serial.printf("State '%s': INFO - Update interval (%ld ms) is very short. Ensure this is intended.\n", state->getName(), state->getUpdateInterval());
+            // This is informational, not necessarily a "problem" for the warning count unless deemed critical.
+        }
+
+        // Check for enabled CALC states without an expression
+        if (state->getType() == obd::CALC && state->isEnabled() && !state->hasCalcExpression()) {
+            Serial.printf("State '%s': WARNING - Enabled CALC state has no calculation expression.\n", state->getName());
+            currentProblematic = true;
+        }
+
+        // Check for READ states that might have default/uninitialized PIDs if enabled.
+        // This is a heuristic. PID 0 for service 1, for example, is valid (PID support list).
+        // A truly robust check for "unconfigured PID" is complex.
+        // We are primarily checking for structural issues post-parsing.
+        if (state->getType() == obd::READ && state->isEnabled()) {
+            // Example: if the state name itself doesn't suggest it's a PID support query,
+            // and it has default-like PID values, it might be a warning.
+            // This is difficult to make generic and non-noisy.
+            // For now, we'll skip overly specific PID validation here to avoid false positives,
+            // relying on the user to configure PIDs correctly. The improved parsing should help.
+        }
+
+        if (currentProblematic) {
+            statesWithWarnings++;
+        } else {
+            wellConfiguredStates++;
+        }
+    }
+
+    Serial.printf("State validation summary: %d states appear configured, %d states have warnings.\n", wellConfiguredStates, statesWithWarnings);
+}
+
 
 OBDClass OBD;

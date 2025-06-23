@@ -178,6 +178,9 @@ public:
 #endif
 
     std::string getConnectedBTAddress() const;
+
+private:
+    void validateStates() const;
 };
 
 extern OBDClass OBD;

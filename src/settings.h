@@ -258,6 +258,9 @@ public:
     std::string buildJson();
 
     bool parseJson(std::string json);
+
+private:
+    void validateSettings() const;
 };
 
 extern SettingsClass Settings;

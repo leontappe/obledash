@@ -367,7 +367,7 @@ bool sendOBDData() {
                 continue;
             }
 
-            DEBUG_PORT.printf("Sending state %s...\n", state->getName());
+            DEBUG_PORT.printf("Sending state %s: ", state->getName());
 
             if (state->valueType() == "int") {
                 auto* is = reinterpret_cast<OBDStateInt*>(state);
@@ -386,7 +386,7 @@ bool sendOBDData() {
                 free(str);
             }
 
-            DEBUG_PORT.printf("State %s: %s\n", state->getName(), std::string(tmp_char));
+            DEBUG_PORT.printf("State %s: %s", state->getName(), std::string(tmp_char));
 
             // allSendsSucceeded |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
         }

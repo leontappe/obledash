@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <numeric>
 
+// #define DEBUG_STATE_FILTERING // Uncomment for very verbose state filtering logs
+
 OBDStates::OBDStates(ELM327 *elm327) {
     this->elm327 = elm327;
 }
@@ -182,10 +184,15 @@ OBDState *OBDStates::nextState() {
     if (!states.empty() && elm327 != nullptr && elm327->elm_port) {
         std::vector<OBDState *> readStates{};
         getStates([](const OBDState *state) {
-            return state->isEnabled() &&
-                   (state->getType() ==  obd::READ || state->getType() ==  obd::CALC && state->hasCalcExpression()) &&
-                   (state->getUpdateInterval() != -1 || state->getUpdateInterval() == -1 && state->getLastUpdate() ==
-                    0);
+            bool isEnabled = state->isEnabled();
+            bool isCorrectType = (state->getType() == obd::READ || (state->getType() == obd::CALC && state->hasCalcExpression()));
+            bool isCorrectIntervalLogic = (state->getUpdateInterval() != -1 || (state->getUpdateInterval() == -1 && state->getLastUpdate() == 0));
+        #ifdef DEBUG_STATE_FILTERING
+            if (!isEnabled) Serial.printf("State '%s' filtered: not enabled\n", state->getName());
+            if (isEnabled && !isCorrectType) Serial.printf("State '%s' filtered: wrong type/no expr (type: %d, hasExpr: %d)\n", state->getName(), state->getType(), state->hasCalcExpression());
+            if (isEnabled && isCorrectType && !isCorrectIntervalLogic) Serial.printf("State '%s' filtered: interval logic (interval: %ld, lastUpdate: %lu)\n", state->getName(), state->getUpdateInterval(), state->getLastUpdate());
+        #endif
+            return isEnabled && isCorrectType && isCorrectIntervalLogic;
         }, readStates);
         sort(readStates.begin(), readStates.end(), compareStates);
 

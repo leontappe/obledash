@@ -178,7 +178,10 @@ bool OBDState::isEnabled() const {
 }
 
 void OBDState::setEnabled(bool enable) {
-    this->enabled = enable;
+    if (this->enabled != enable) {
+        Serial.printf("State '%s': %s\n", this->name, enable ? "enabled" : "disabled");
+        this->enabled = enable;
+    }
 }
 
 OBDState *OBDState::withEnabled(const bool enable) {
@@ -204,7 +207,10 @@ bool OBDState::isProcessing() const {
 }
 
 void OBDState::setUpdateInterval(const long interval) {
-    this->updateInterval = interval;
+    if (this->updateInterval != interval) {
+        Serial.printf("State '%s': update interval set to %ld ms\n", this->name, interval);
+        this->updateInterval = interval;
+    }
 }
 
 long OBDState::getUpdateInterval() const {
@@ -393,11 +399,13 @@ void TypedOBDState<T>::readValue() {
                 }
 
                 this->lastUpdate = millis();
+                Serial.printf("State '%s': lastUpdate set to %lu (readValue success)\n", this->getName(), this->lastUpdate);
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
             } else if (elm327->nb_rx_state == ELM_NO_DATA) {
                 this->value = 0;
                 this->lastUpdate = millis();
+                Serial.printf("State '%s': lastUpdate set to %lu (readValue no data)\n", this->getName(), this->lastUpdate);
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
             } else if (elm327->nb_rx_state != ELM_GETTING_MSG) {
@@ -445,6 +453,7 @@ void TypedOBDState<T>::calcValue(const std::function<double(const char *)> &func
             Serial.println(parser.errormsg);
         }
         this->lastUpdate = millis();
+        Serial.printf("State '%s': lastUpdate set to %lu (calcValue)\n", this->getName(), this->lastUpdate);
         this->processing = false;
     }
 }
