@@ -1,6 +1,8 @@
 {
   "obd2": {
     "name": "OBDBLE",
-    "protocol": "6"
+    "protocol": "6",
+    "debug": true,
+    "mac": "81:23:45:67:89:ba"
   }
 }
