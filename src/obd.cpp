@@ -174,13 +174,15 @@ void OBDClass::fromJSON(T *state, JsonDocument &doc) {
         }
     }
 
-    if (!doc["value"]["format"].isNull()) {
-        state->setValueFormat(doc["value"]["format"].as<std::string>().c_str());
-    }
-    if (!doc["value"]["func"].isNull()) {
-        setFormatFuncByName<T>(doc["value"]["func"].as<std::string>().c_str(), state);
-    } else if (!doc["value"]["expr"].isNull()) {
-        state->setValueFormatExpression(doc["value"]["expr"].as<std::string>().c_str());
+    if (!doc["value"].isNull()) {
+        if (!doc["value"]["format"].isNull()) {
+            state->setValueFormat(doc["value"]["format"].as<std::string>().c_str());
+        }
+        if (!doc["value"]["func"].isNull()) {
+            setFormatFuncByName<T>(doc["value"]["func"].as<std::string>().c_str(), state);
+        } else if (!doc["value"]["expr"].isNull()) {
+            state->setValueFormatExpression(doc["value"]["expr"].as<std::string>().c_str());
+        }
     }
 
     // is reset by setPIDSettings
