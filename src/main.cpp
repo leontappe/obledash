@@ -74,7 +74,8 @@ TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight);
 
 /* LVGL Label Storage */
 static std::map<std::string, lv_obj_t*> obd_value_labels;
-static std::map<std::string, lv_obj_t*> obd_unit_labels; // Currently unused for updates but structure is there
+// static std::map<std::string, lv_obj_t*> obd_unit_labels; // Currently unused for updates but structure is there
+static std::map<std::string, std::string> last_displayed_obd_values; // For flicker reduction
 
 // my_print function removed as LV_LOG_PRINTF = 1 in lv_conf.h
 
@@ -219,7 +220,20 @@ void lvgl_update_obd_task(void *pvParameters) {
                 else val_str = strdup("N/A");
 
                 if (val_str) {
-                    lv_label_set_text(label_ptr, val_str);
+                    // Check if the value has changed before updating the label
+                    bool changed = true; // Assume changed if not found in map
+                    auto it = last_displayed_obd_values.find(name);
+                    if (it != last_displayed_obd_values.end()) {
+                        if (it->second == val_str) {
+                            changed = false;
+                        }
+                    }
+
+                    if (changed) {
+                        lv_label_set_text(label_ptr, val_str);
+                        last_displayed_obd_values[name] = val_str;
+                        // Serial.printf("Updated LVGL label for %s to %s\n", name.c_str(), val_str);
+                    }
                     free(val_str);
                 }
             }
