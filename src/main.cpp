@@ -313,15 +313,276 @@ void lvgl_handler_task(void *pvParameters) {
     }
 }
 
-#endif // BOARD_HAS_DISPLAY
-
+// Conditional includes and globals for Display
 #ifdef BOARD_HAS_DISPLAY
-// For storing LVGL label objects that need updating
+#include <lvgl.h>
+#include <TFT_eSPI.h>
 #include <map>
 #include <string>
+
+/*Change to your screen resolution*/
+static const uint16_t screenWidth = 240;
+static const uint16_t screenHeight = 320;
+
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf_1[screenWidth * 10]; /*Declare a buffer for 10 lines*/
+#ifdef CONFIG_IDF_TARGET_ESP32S3 // S3 can use PSRAM for second buffer
+static lv_color_t* buf_2 = NULL; // Will allocate in PSRAM
+#else
+static lv_color_t buf_2[screenWidth * 10]; /*Declare a buffer for 10 lines*/
+#endif
+
+TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
+
+// For storing LVGL label objects that need updating
 static std::map<std::string, lv_obj_t*> obd_value_labels;
 static std::map<std::string, lv_obj_t*> obd_unit_labels; // If units could also change (less likely for now)
+
+
+#if LV_USE_LOG != 0
+/* Serial debugging */
+void my_print(const char * buf)
+{
+    Serial.printf(buf);
+    Serial.flush();
+}
 #endif
+
+/* Display flushing */
+void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
+{
+    uint32_t w = ( area->x2 - area->x1 + 1 );
+    uint32_t h = ( area->y2 - area->y1 + 1 );
+
+    tft.startWrite();
+    tft.setAddrWindow( area->x1, area->y1, w, h );
+    tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+    tft.endWrite();
+
+    lv_disp_flush_ready( disp_drv );
+}
+
+/*Read the touchpad*/
+void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
+{
+    uint16_t touchX, touchY;
+
+    bool touched = tft.getTouch( &touchX, &touchY, 600 ); // 600 is pressure threshold
+
+    if( !touched )
+    {
+        data->state = LV_INDEV_STATE_REL;
+    }
+    else
+    {
+        data->state = LV_INDEV_STATE_PR;
+
+        /*Set the coordinates*/
+        // Need to calibrate X and Y based on screen orientation and touch IC
+        // For ESP32-2432S028R in portrait (240x320), XPT2046 might map like this:
+        // X from ~200 (left) to ~3800 (right)
+        // Y from ~200 (top) to ~3800 (bottom)
+        // This needs calibration per device! The values below are placeholders.
+        // data->point.x = map(touchX, 200, 3800, 0, screenWidth);
+        // data->point.y = map(touchY, 200, 3800, 0, screenHeight);
+        // For now, direct mapping, assuming TFT_eSPI handles rotation for touch.
+        // If TFT_eSPI is set up for portrait, it might return coordinates already mapped to 240x320.
+        data->point.x = touchX;
+        data->point.y = touchY;
+
+
+        // Serial.printf( "Touch X=%d, Y=%d -> Mapped X=%d, Y=%d\n", touchX, touchY, data->point.x, data->point.y );
+    }
+}
+
+void lvgl_init() {
+#if LV_USE_LOG != 0
+    lv_log_register_print_cb( my_print ); /* register print function for debugging */
+#endif
+
+    lv_init();
+
+    tft.begin();          /* TFT init */
+    tft.setRotation( 0 ); /* Landscape orientation (default) or 1 for Portrait, 2 for Landscape inverted, 3 for Portrait inverted */
+                          /* For 240x320 screen, usually rotation 0 or 1. If using 240 as width, 320 as height, this is likely portrait.
+                             If screenWidth=320, screenHeight=240, then it's landscape.
+                             The ESP32-2432S028R is 320 (width) x 240 (height) physically.
+                             If we define screenWidth=240, screenHeight=320, we are using it in portrait.
+                             Let's assume portrait: tft.setRotation(1) or (3).
+                             If tft.setRotation(0) means physical 320x240, then LVGL hor_res=320, ver_res=240
+                             Our lv_conf.h has hor_res=240, ver_res=320. So rotation should make TFT match this.
+                             Commonly for ILI9341: 0=landscape(320x240), 1=portrait(240x320), 2=inv_landscape(320x240), 3=inv_portrait(240x320)
+                             So, with screenWidth=240, screenHeight=320, we need tft.setRotation(1) or tft.setRotation(3).
+                             Let's use 1 for now.
+                           */
+    tft.setRotation(1); // Portrait mode for 240x320 LVGL config
+
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+    if (psramFound()) {
+        buf_2 = (lv_color_t*)ps_malloc(screenWidth * 10 * sizeof(lv_color_t));
+        if (!buf_2) {
+            // Fallback to internal RAM if PSRAM allocation fails
+            buf_2 = static_cast<lv_color_t*>(malloc(screenWidth * 10 * sizeof(lv_color_t)));
+        }
+    } else {
+         buf_2 = static_cast<lv_color_t*>(malloc(screenWidth * 10 * sizeof(lv_color_t)));
+    }
+#endif // ifdef CONFIG_IDF_TARGET_ESP32S3 (for buf_2 allocation)
+    if (!buf_1 || !buf_2) {
+        Serial.println("LVGL disp buf alloc failed!");
+        // Handle error, perhaps by reducing buffer size or stopping
+        return;
+    }
+    lv_disp_draw_buf_init( &draw_buf, buf_1, buf_2, screenWidth * 10 );
+
+    /*Initialize the display*/
+    static lv_disp_drv_t disp_drv;
+    lv_disp_drv_init( &disp_drv );
+    /*Change the following line to your display resolution*/
+    disp_drv.hor_res = screenWidth;
+    disp_drv.ver_res = screenHeight;
+    disp_drv.flush_cb = my_disp_flush;
+    disp_drv.draw_buf = &draw_buf;
+    lv_disp_drv_register( &disp_drv );
+
+    /*Initialize the input device driver*/
+    static lv_indev_drv_t indev_drv;
+    lv_indev_drv_init( &indev_drv );
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = my_touchpad_read;
+    lv_indev_drv_register( &indev_drv );
+
+    /* Get the active screen */
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_clean(scr); // Clear screen, remove hello world label if any
+
+    /* Create a container for the list of states */
+    lv_obj_t *list_cont = lv_obj_create(scr);
+    lv_obj_set_size(list_cont, screenWidth, screenHeight); // Use full screen
+    lv_obj_align(list_cont, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_set_flex_flow(list_cont, LV_FLEX_FLOW_COLUMN); // Arrange items vertically
+    lv_obj_set_flex_align(list_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    // lv_obj_set_layout(list_cont, LV_LAYOUT_FLEX); // Using flex for layout
+
+    // Style for list items (optional, for padding etc.)
+    static lv_style_t style_list_item;
+    lv_style_init(&style_list_item);
+    lv_style_set_pad_all(&style_list_item, 2); // Small padding around items
+    lv_style_set_pad_gap(&style_list_item, 5); // Gap between elements in a row
+    lv_style_set_width(&style_list_item, lv_pct(98)); // Make items take most of the width
+
+    Serial.println("Populating OBD states on LVGL UI...");
+
+    std::vector<OBDState *> states_to_display;
+    OBD.getStates([](const OBDState *state) {
+        return state->isVisible() && state->isEnabled();
+    }, states_to_display);
+
+    Serial.printf("Found %d states to display.\n", states_to_display.size());
+
+    if (states_to_display.empty()) {
+        lv_obj_t *label = lv_label_create(list_cont);
+        lv_label_set_text(label, "No states to display.");
+        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+    } else {
+        for (OBDState *state : states_to_display) {
+            // Container for each state row (description, value, unit)
+            lv_obj_t *item_cont = lv_obj_create(list_cont);
+            lv_obj_add_style(item_cont, &style_list_item, 0);
+            lv_obj_set_flex_flow(item_cont, LV_FLEX_FLOW_ROW);
+            lv_obj_set_flex_align(item_cont, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+            lv_obj_set_width(item_cont, lv_pct(95)); // Make item container take most of list_cont width
+
+            // Description Label
+            lv_obj_t *desc_label = lv_label_create(item_cont);
+            lv_label_set_text(desc_label, state->getDescription());
+            lv_label_set_long_mode(desc_label, LV_LABEL_LONG_WRAP);
+            lv_obj_set_flex_grow(desc_label, 1); // Allow description to take available space
+            lv_obj_set_style_text_align(desc_label, LV_TEXT_ALIGN_LEFT, 0);
+
+
+            // Value Label
+            lv_obj_t *val_label = lv_label_create(item_cont);
+            char *val_str = nullptr;
+            // Temporary value display - real value update will be in another step
+            if (strcmp(state->valueType(), "int") == 0) {
+                val_str = reinterpret_cast<TypedOBDState<int>*>(state)->formatValue();
+            } else if (strcmp(state->valueType(), "float") == 0) {
+                val_str = reinterpret_cast<TypedOBDState<float>*>(state)->formatValue();
+            } else if (strcmp(state->valueType(), "bool") == 0) {
+                val_str = reinterpret_cast<TypedOBDState<bool>*>(state)->formatValue();
+            } else {
+                val_str = strdup("N/A");
+            }
+            lv_label_set_text(val_label, val_str ? val_str : "Err");
+            lv_obj_set_style_text_align(val_label, LV_TEXT_ALIGN_RIGHT, 0);
+            if (val_str) free(val_str);
+            obd_value_labels[state->getName()] = val_label; // Store the label pointer
+
+
+            // Unit Label
+            lv_obj_t *unit_label = lv_label_create(item_cont);
+            lv_label_set_text(unit_label, state->getUnit());
+            lv_obj_set_style_min_width(unit_label, 30, 0); // Give unit some minimum space, added selector 0
+            lv_obj_set_style_text_align(unit_label, LV_TEXT_ALIGN_RIGHT, 0);
+            // obd_unit_labels[state->getName()] = unit_label; // If units can change
+
+
+            Serial.printf("Added: %s (%s)\n", state->getDescription(), state->getName());
+        }
+    }
+    Serial.println( "LVGL UI populated with states." );
+}
+
+// Task to update LVGL labels with new OBD data
+void lvgl_update_obd_task(void *pvParameters) {
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000); // Update every 1 second
+
+    // Initialise the xLastWakeTime variable with the current time.
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;;) {
+        // Wait for the next cycle.
+        vTaskDelayUntil( &xLastWakeTime, xFrequency );
+
+        // Serial.println("LVGL OBD Update Task running...");
+        for (auto const& [name, label_ptr] : obd_value_labels) {
+            OBDState *state = OBD.getStateByName(name.c_str());
+            if (state && state->isVisible() && state->isEnabled()) {
+                char *val_str = nullptr;
+                if (strcmp(state->valueType(), "int") == 0) {
+                    val_str = reinterpret_cast<TypedOBDState<int>*>(state)->formatValue();
+                } else if (strcmp(state->valueType(), "float") == 0) {
+                    val_str = reinterpret_cast<TypedOBDState<float>*>(state)->formatValue();
+                } else if (strcmp(state->valueType(), "bool") == 0) {
+                    val_str = reinterpret_cast<TypedOBDState<bool>*>(state)->formatValue();
+                } else {
+                    // Should not happen if list is based on initially parsed states
+                    val_str = strdup("N/A");
+                }
+
+                if (val_str) {
+                    // Important: LVGL operations must be in LVGL task or protected by mutex
+                    // For simplicity here, direct update. If issues, use lv_async_call or mutex
+                    lv_label_set_text(label_ptr, val_str);
+                    // Serial.printf("Updating %s to %s\n", name.c_str(), val_str);
+                    free(val_str);
+                }
+            }
+        }
+    }
+}
+
+// Task to handle LVGL
+void lvgl_handler_task(void *pvParameters) {
+    for (;;) {
+        lv_timer_handler(); /* let the GUI do its work */
+        delay(5);
+    }
+}
+
+#endif // BOARD_HAS_DISPLAY
 
 HTTPServer server(80);
 
