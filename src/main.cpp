@@ -251,7 +251,7 @@ void lvgl_init() {
             // Unit Label
             lv_obj_t *unit_label = lv_label_create(item_cont);
             lv_label_set_text(unit_label, state->getUnit());
-            lv_obj_set_style_min_width(unit_label, 30); // Give unit some minimum space
+            lv_obj_set_style_min_width(unit_label, 30, 0); // Give unit some minimum space, added selector 0
             lv_obj_set_style_text_align(unit_label, LV_TEXT_ALIGN_RIGHT, 0);
             // obd_unit_labels[state->getName()] = unit_label; // If units can change
 

@@ -205,7 +205,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
  *Greatly reduces the binary size if only a few fonts are used.
  *Other fonts need to be converted using Font converter tool: offline-font-converter.py
  *Every font status have to be defined if LV_FONT_CUSTOM_DECLARE is enabled*/
-#define LV_FONT_CUSTOM_DECLARE 0
+#define LV_FONT_CUSTOM_DECLARE /* Used to be: #define LV_FONT_CUSTOM_DECLARE 0 - causes build error with modern compilers if set to 0 directly here. Define as empty if no custom declaration.*/
 
 /*Enable the Operating system abstraction layer*/
 #define LV_USE_OS               LV_OS_NONE
