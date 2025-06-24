@@ -153,7 +153,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  define LV_LOG_LEVEL    LV_LOG_LEVEL_WARN
 
 /*1: Print the log with 'printf'; 0: User need to register a callback*/
-#  define LV_LOG_PRINTF   0
+#  define LV_LOG_PRINTF   1
 /*The user log function can be registered with `lv_log_register_print_cb`*/
 #endif  /*LV_USE_LOG*/
 

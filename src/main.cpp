@@ -50,6 +50,7 @@
 
 #ifdef BOARD_HAS_DISPLAY
 // LVGL and Display related includes, globals, and functions
+// NOTE: my_print function and its registration are removed as LV_LOG_PRINTF is now 1
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <map>
@@ -75,13 +76,7 @@ TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight);
 static std::map<std::string, lv_obj_t*> obd_value_labels;
 static std::map<std::string, lv_obj_t*> obd_unit_labels; // Currently unused for updates but structure is there
 
-#if LV_USE_LOG != 0
-/* LVGL Log Print Function */
-void my_print(const char * buf) {
-    Serial.printf(buf);
-    Serial.flush();
-}
-#endif
+// my_print function removed as LV_LOG_PRINTF = 1 in lv_conf.h
 
 /* LVGL Display Flush Callback */
 void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p ) {
@@ -109,9 +104,7 @@ void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data ) {
 
 /* Initialize LVGL and create UI elements */
 void lvgl_init() {
-#if LV_USE_LOG != 0
-    lv_log_register_print_cb( my_print );
-#endif
+    // lv_log_register_print_cb( my_print ) removed as LV_LOG_PRINTF = 1
     lv_init();
     tft.begin();
     tft.setRotation(1); // Portrait mode
