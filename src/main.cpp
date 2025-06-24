@@ -107,6 +107,16 @@ void lvgl_init() {
     // lv_log_register_print_cb( my_print ) removed as LV_LOG_PRINTF = 1
     lv_init();
     tft.begin();
+
+    // Explicitly turn on backlight if TFT_BL is defined
+    #if defined(TFT_BL) && (TFT_BL >= 0)
+      pinMode(TFT_BL, OUTPUT);
+      digitalWrite(TFT_BL, HIGH); // Turn backlight on
+      Serial.println("Backlight pin TFT_BL initialized and turned HIGH.");
+    #else
+      Serial.println("TFT_BL not defined or invalid, backlight control skipped.");
+    #endif
+
     tft.setRotation(1); // Portrait mode
 
 #ifdef CONFIG_IDF_TARGET_ESP32S3
