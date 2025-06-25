@@ -48,6 +48,235 @@
 #include "obd.h"
 #include "http.h"
 
+#ifdef BOARD_HAS_DISPLAY
+// LVGL and Display related includes, globals, and functions
+// NOTE: my_print function and its registration are removed as LV_LOG_PRINTF is now 1
+#include <lvgl.h>
+#include <TFT_eSPI.h>
+#include <map>
+#include <string>
+
+/* Screen resolution */
+static const uint16_t screenWidth = 240;
+static const uint16_t screenHeight = 320;
+
+/* LVGL Display Buffers */
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf_1[screenWidth * 10];
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+static lv_color_t* buf_2 = NULL;
+#else
+static lv_color_t buf_2[screenWidth * 10];
+#endif
+
+/* TFT_eSPI instance */
+TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight);
+
+/* LVGL Label Storage */
+static std::map<std::string, lv_obj_t*> obd_value_labels;
+// static std::map<std::string, lv_obj_t*> obd_unit_labels; // Currently unused for updates but structure is there
+static std::map<std::string, std::string> last_displayed_obd_values; // For flicker reduction
+
+// my_print function removed as LV_LOG_PRINTF = 1 in lv_conf.h
+
+/* LVGL Display Flush Callback */
+void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p ) {
+    uint32_t w = ( area->x2 - area->x1 + 1 );
+    uint32_t h = ( area->y2 - area->y1 + 1 );
+    tft.startWrite();
+    tft.setAddrWindow( area->x1, area->y1, w, h );
+    tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+    tft.endWrite();
+    lv_disp_flush_ready( disp_drv );
+}
+
+/* LVGL Touchpad Read Callback */
+void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data ) {
+    uint16_t touchX, touchY;
+    bool touched = tft.getTouch( &touchX, &touchY, 600 ); // 600 is pressure threshold from TFT_eSPI example
+
+    if( !touched ) {
+        data->state = LV_INDEV_STATE_REL;
+    } else {
+        data->state = LV_INDEV_STATE_PR;
+
+        // Touch Calibration - IMPORTANT: These RAW values are placeholders!
+        // You MUST calibrate these by touching the corners of your screen
+        // and observing the raw touchX, touchY values printed to Serial.
+        // const int16_t RAW_X_MIN = 200, RAW_X_MAX = 3800; // Adjust these for your screen
+        // const int16_t RAW_Y_MIN = 200, RAW_Y_MAX = 3800; // Adjust these for your screen
+
+        // data->point.x = map(touchX, RAW_X_MIN, RAW_X_MAX, 0, screenWidth -1);
+        // data->point.y = map(touchY, RAW_Y_MIN, RAW_Y_MAX, 0, screenHeight -1);
+
+        // For initial testing without calibration, direct mapping is used.
+        // TFT_eSPI's getTouch might return coordinates somewhat adjusted by setRotation,
+        // but fine-tuning is usually needed.
+        data->point.x = touchX;
+        data->point.y = touchY;
+
+        // Serial.printf("Touch: Raw X=%d, Raw Y=%d  => Mapped X=%d, Mapped Y=%d\n", touchX, touchY, data->point.x, data->point.y);
+    }
+}
+
+/* Initialize LVGL and create UI elements */
+void lvgl_init() {
+    // lv_log_register_print_cb( my_print ) removed as LV_LOG_PRINTF = 1
+    lv_init();
+    tft.begin();
+
+    // Explicitly turn on backlight if TFT_BL is defined
+    #if defined(TFT_BL) && (TFT_BL >= 0)
+      pinMode(TFT_BL, OUTPUT);
+      digitalWrite(TFT_BL, HIGH); // Turn backlight on
+      Serial.println("Backlight pin TFT_BL initialized and turned HIGH.");
+    #else
+      Serial.println("TFT_BL not defined or invalid, backlight control skipped.");
+    #endif
+
+    tft.setRotation(1); // Portrait mode
+
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+    if (psramFound()) {
+        buf_2 = (lv_color_t*)ps_malloc(screenWidth * 10 * sizeof(lv_color_t));
+        if (!buf_2) buf_2 = static_cast<lv_color_t*>(malloc(screenWidth * 10 * sizeof(lv_color_t)));
+    } else {
+         buf_2 = static_cast<lv_color_t*>(malloc(screenWidth * 10 * sizeof(lv_color_t)));
+    }
+#endif
+    if (!buf_1 || !buf_2) {
+        Serial.println("LVGL disp buf alloc failed!");
+        return;
+    }
+    lv_disp_draw_buf_init( &draw_buf, buf_1, buf_2, screenWidth * 10 );
+
+    static lv_disp_drv_t disp_drv;
+    lv_disp_drv_init( &disp_drv );
+    disp_drv.hor_res = screenWidth;
+    disp_drv.ver_res = screenHeight;
+    disp_drv.flush_cb = my_disp_flush;
+    disp_drv.draw_buf = &draw_buf;
+    lv_disp_drv_register( &disp_drv );
+
+    static lv_indev_drv_t indev_drv;
+    lv_indev_drv_init( &indev_drv );
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = my_touchpad_read;
+    lv_indev_drv_register( &indev_drv );
+
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_clean(scr);
+
+    lv_obj_t *list_cont = lv_obj_create(scr);
+    lv_obj_set_size(list_cont, screenWidth, screenHeight);
+    lv_obj_align(list_cont, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_set_flex_flow(list_cont, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(list_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    static lv_style_t style_list_item;
+    lv_style_init(&style_list_item);
+    lv_style_set_pad_hor(&style_list_item, 2); // Horizontal padding for the item container
+    lv_style_set_pad_ver(&style_list_item, 1); // Reduced vertical padding for the item container
+    lv_style_set_pad_gap(&style_list_item, 3); // Reduced gap between elements in a row
+    lv_style_set_width(&style_list_item, lv_pct(98));
+    // lv_obj_set_height(item_cont, LV_SIZE_CONTENT); // Let content dictate height initially
+
+    // Style for smaller text
+    static lv_style_t style_small_text;
+    lv_style_init(&style_small_text);
+    lv_style_set_text_font(&style_small_text, &lv_font_montserrat_12);
+
+    std::vector<OBDState *> states_to_display;
+    OBD.getStates([](const OBDState *s){ return s->isVisible() && s->isEnabled(); }, states_to_display);
+
+    if (states_to_display.empty()) {
+        lv_obj_t *label = lv_label_create(list_cont);
+        lv_label_set_text(label, "No states to display.");
+        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+    } else {
+        for (OBDState *state : states_to_display) {
+            lv_obj_t *item_cont = lv_obj_create(list_cont);
+            lv_obj_add_style(item_cont, &style_list_item, 0);
+            lv_obj_set_flex_flow(item_cont, LV_FLEX_FLOW_ROW);
+            lv_obj_set_flex_align(item_cont, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+            lv_obj_set_width(item_cont, lv_pct(95));
+
+            lv_obj_t *desc_label = lv_label_create(item_cont);
+            lv_label_set_text(desc_label, state->getDescription());
+            lv_label_set_long_mode(desc_label, LV_LABEL_LONG_WRAP);
+            lv_obj_set_flex_grow(desc_label, 1);
+            lv_obj_set_style_text_align(desc_label, LV_TEXT_ALIGN_LEFT, 0);
+            lv_obj_add_style(desc_label, &style_small_text, 0);
+
+
+            lv_obj_t *val_label = lv_label_create(item_cont);
+            char *val_str = nullptr;
+            if (strcmp(state->valueType(), "int") == 0) val_str = reinterpret_cast<TypedOBDState<int>*>(state)->formatValue();
+            else if (strcmp(state->valueType(), "float") == 0) val_str = reinterpret_cast<TypedOBDState<float>*>(state)->formatValue();
+            else if (strcmp(state->valueType(), "bool") == 0) val_str = reinterpret_cast<TypedOBDState<bool>*>(state)->formatValue();
+            else val_str = strdup("N/A");
+            lv_label_set_text(val_label, val_str ? val_str : "Err");
+            lv_obj_set_style_text_align(val_label, LV_TEXT_ALIGN_RIGHT, 0);
+            lv_obj_add_style(val_label, &style_small_text, 0);
+            if (val_str) free(val_str);
+            obd_value_labels[state->getName()] = val_label;
+
+            lv_obj_t *unit_label = lv_label_create(item_cont);
+            lv_label_set_text(unit_label, state->getUnit());
+            lv_obj_set_style_min_width(unit_label, 25, 0); // Reduced min width for unit
+            lv_obj_set_style_text_align(unit_label, LV_TEXT_ALIGN_RIGHT, 0);
+            lv_obj_add_style(unit_label, &style_small_text, 0);
+        }
+    }
+    Serial.println( "LVGL UI populated." );
+}
+
+/* Task to update LVGL labels with new OBD data */
+void lvgl_update_obd_task(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000);
+    for (;;) {
+        vTaskDelayUntil( &xLastWakeTime, xFrequency );
+        for (auto const& [name, label_ptr] : obd_value_labels) {
+            OBDState *state = OBD.getStateByName(name.c_str());
+            if (state && state->isVisible() && state->isEnabled()) {
+                char *val_str = nullptr;
+                if (strcmp(state->valueType(), "int") == 0) val_str = reinterpret_cast<TypedOBDState<int>*>(state)->formatValue();
+                else if (strcmp(state->valueType(), "float") == 0) val_str = reinterpret_cast<TypedOBDState<float>*>(state)->formatValue();
+                else if (strcmp(state->valueType(), "bool") == 0) val_str = reinterpret_cast<TypedOBDState<bool>*>(state)->formatValue();
+                else val_str = strdup("N/A");
+
+                if (val_str) {
+                    // Check if the value has changed before updating the label
+                    bool changed = true; // Assume changed if not found in map
+                    auto it = last_displayed_obd_values.find(name);
+                    if (it != last_displayed_obd_values.end()) {
+                        if (it->second == val_str) {
+                            changed = false;
+                        }
+                    }
+
+                    if (changed) {
+                        lv_label_set_text(label_ptr, val_str);
+                        last_displayed_obd_values[name] = val_str;
+                        // Serial.printf("Updated LVGL label for %s to %s\n", name.c_str(), val_str);
+                    }
+                    free(val_str);
+                }
+            }
+        }
+    }
+}
+
+/* Task to handle LVGL internal operations */
+void lvgl_handler_task(void *pvParameters) {
+    for (;;) {
+        lv_timer_handler();
+        delay(5);
+    }
+}
+#endif // BOARD_HAS_DISPLAY
+
 HTTPServer server(80);
 
 #define DEBUG_PORT Serial
@@ -541,6 +770,31 @@ void setup() {
     xTaskCreatePinnedToCore(outputTask, "OutputTask", 9216, nullptr, 10, &outputTaskHdl, 0);
 
     xTaskCreatePinnedToCore(readStatesTask, "ReadStatesTask", 9216, nullptr, 1, &stateTaskHdl, 1);
+
+#ifdef BOARD_HAS_DISPLAY
+    lvgl_init();
+    xTaskCreatePinnedToCore(
+        lvgl_handler_task,
+        "LVGLHandler",
+        8192,
+        nullptr,
+        5,  // Priority
+        nullptr,
+        1 // Pin to core 1
+    );
+    DEBUG_PORT.println("LVGL Handler task created.");
+
+    xTaskCreatePinnedToCore(
+        lvgl_update_obd_task,
+        "LVGLUpdateOBD",
+        4096,
+        nullptr,
+        4,    // Priority
+        nullptr,
+        1        // Pin to core 1
+    );
+    DEBUG_PORT.println("LVGL OBD Update task created.");
+#endif
 }
 
 void loop() {
