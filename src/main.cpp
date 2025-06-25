@@ -93,13 +93,29 @@ void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *
 /* LVGL Touchpad Read Callback */
 void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data ) {
     uint16_t touchX, touchY;
-    bool touched = tft.getTouch( &touchX, &touchY, 600 );
+    bool touched = tft.getTouch( &touchX, &touchY, 600 ); // 600 is pressure threshold from TFT_eSPI example
+
     if( !touched ) {
         data->state = LV_INDEV_STATE_REL;
     } else {
         data->state = LV_INDEV_STATE_PR;
-        data->point.x = touchX; // Needs calibration for accurate mapping
-        data->point.y = touchY; // Needs calibration for accurate mapping
+
+        // Touch Calibration - IMPORTANT: These RAW values are placeholders!
+        // You MUST calibrate these by touching the corners of your screen
+        // and observing the raw touchX, touchY values printed to Serial.
+        // const int16_t RAW_X_MIN = 200, RAW_X_MAX = 3800; // Adjust these for your screen
+        // const int16_t RAW_Y_MIN = 200, RAW_Y_MAX = 3800; // Adjust these for your screen
+
+        // data->point.x = map(touchX, RAW_X_MIN, RAW_X_MAX, 0, screenWidth -1);
+        // data->point.y = map(touchY, RAW_Y_MIN, RAW_Y_MAX, 0, screenHeight -1);
+
+        // For initial testing without calibration, direct mapping is used.
+        // TFT_eSPI's getTouch might return coordinates somewhat adjusted by setRotation,
+        // but fine-tuning is usually needed.
+        data->point.x = touchX;
+        data->point.y = touchY;
+
+        // Serial.printf("Touch: Raw X=%d, Raw Y=%d  => Mapped X=%d, Mapped Y=%d\n", touchX, touchY, data->point.x, data->point.y);
     }
 }
 
@@ -159,9 +175,16 @@ void lvgl_init() {
 
     static lv_style_t style_list_item;
     lv_style_init(&style_list_item);
-    lv_style_set_pad_all(&style_list_item, 2);
-    lv_style_set_pad_gap(&style_list_item, 5);
+    lv_style_set_pad_hor(&style_list_item, 2); // Horizontal padding for the item container
+    lv_style_set_pad_ver(&style_list_item, 1); // Reduced vertical padding for the item container
+    lv_style_set_pad_gap(&style_list_item, 3); // Reduced gap between elements in a row
     lv_style_set_width(&style_list_item, lv_pct(98));
+    // lv_obj_set_height(item_cont, LV_SIZE_CONTENT); // Let content dictate height initially
+
+    // Style for smaller text
+    static lv_style_t style_small_text;
+    lv_style_init(&style_small_text);
+    lv_style_set_text_font(&style_small_text, &lv_font_montserrat_12);
 
     std::vector<OBDState *> states_to_display;
     OBD.getStates([](const OBDState *s){ return s->isVisible() && s->isEnabled(); }, states_to_display);
@@ -183,6 +206,8 @@ void lvgl_init() {
             lv_label_set_long_mode(desc_label, LV_LABEL_LONG_WRAP);
             lv_obj_set_flex_grow(desc_label, 1);
             lv_obj_set_style_text_align(desc_label, LV_TEXT_ALIGN_LEFT, 0);
+            lv_obj_add_style(desc_label, &style_small_text, 0);
+
 
             lv_obj_t *val_label = lv_label_create(item_cont);
             char *val_str = nullptr;
@@ -192,13 +217,15 @@ void lvgl_init() {
             else val_str = strdup("N/A");
             lv_label_set_text(val_label, val_str ? val_str : "Err");
             lv_obj_set_style_text_align(val_label, LV_TEXT_ALIGN_RIGHT, 0);
+            lv_obj_add_style(val_label, &style_small_text, 0);
             if (val_str) free(val_str);
             obd_value_labels[state->getName()] = val_label;
 
             lv_obj_t *unit_label = lv_label_create(item_cont);
             lv_label_set_text(unit_label, state->getUnit());
-            lv_obj_set_style_min_width(unit_label, 30, 0); // Added selector 0
+            lv_obj_set_style_min_width(unit_label, 25, 0); // Reduced min width for unit
             lv_obj_set_style_text_align(unit_label, LV_TEXT_ALIGN_RIGHT, 0);
+            lv_obj_add_style(unit_label, &style_small_text, 0);
         }
     }
     Serial.println( "LVGL UI populated." );
