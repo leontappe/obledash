@@ -15,13 +15,13 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307 USA
  */
 
-@import "functions";
-@import "variables";
-@import "color";
-@import "display";
-@import "elements";
-@import "form";
-@import "grid";
+@import "../../scss/functions";
+@import "../../scss/variables";
+@import "../../scss/color";
+@import "../../scss/display";
+@import "../../scss/elements";
+@import "../../scss/form";
+@import "../../scss/grid";
 
 .dashboard {
   padding: 1rem 0;
