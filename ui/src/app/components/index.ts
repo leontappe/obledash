@@ -15,6 +15,7 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307 USA
  */
 
+export * from "./dashboard.component";
 export * from "./deviceInfo.component";
 export * from "./ota.component";
 export * from "./settings.component";
