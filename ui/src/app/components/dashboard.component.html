@@ -1,0 +1,193 @@
+<!--
+  ~ This program is free software; you can use it, redistribute it
+  ~ and / or modify it under the terms of the GNU General Public License
+  ~ (GPL) as published by the Free Software Foundation; either version 3
+  ~ of the License or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful, but
+  ~  WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~  GNU General Public License for more details.
+  ~
+  ~  You should have received a copy of the GNU General Public License
+  ~  along with this program, in a file called gpl.txt or license.txt.
+  ~  If not, write to the Free Software Foundation Inc.,
+  ~  59 Temple Place - Suite 330, Boston, MA  02111-1307 USA
+  -->
+
+<div class="dashboard">
+    <!-- Status Bar -->
+    <div class="status-bar row mb-3">
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="status-label">Connection</div>
+                <div class="status-value" [ngClass]="getConnectionClass()">
+                    {{ getConnectionStatus() }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="status-label">Engine</div>
+                <div class="status-value">{{ getEngineStatus() }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="status-label">Last Update</div>
+                <div class="status-value">
+                    {{ lastUpdate ? (lastUpdate | date:'HH:mm:ss') : '--:--:--' }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="status-label">Firmware</div>
+                <div class="status-value">{{ version || 'Unknown' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Gauges -->
+    <div class="gauges-row row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="gauge-card">
+                <div class="gauge-header">Engine RPM</div>
+                <div class="gauge-container">
+                    <div class="gauge-value">{{ dashboardData.rpm || '--' }}</div>
+                    <div class="gauge-unit">RPM</div>
+                    <div class="gauge-bar">
+                        <div class="gauge-fill" [style.width.%]="getRpmGaugePercentage()"></div>
+                    </div>
+                    <div class="gauge-scale">
+                        <span>0</span>
+                        <span>3000</span>
+                        <span>6000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="gauge-card">
+                <div class="gauge-header">Vehicle Speed</div>
+                <div class="gauge-container">
+                    <div class="gauge-value">{{ dashboardData.speed || '--' }}</div>
+                    <div class="gauge-unit">km/h</div>
+                    <div class="gauge-bar">
+                        <div class="gauge-fill" [style.width.%]="getSpeedGaugePercentage()"></div>
+                    </div>
+                    <div class="gauge-scale">
+                        <span>0</span>
+                        <span>100</span>
+                        <span>200</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Metrics -->
+    <div class="metrics-row row mb-4">
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon">🌡️</div>
+                <div class="metric-content">
+                    <div class="metric-label">Engine Temp</div>
+                    <div class="metric-value">{{ dashboardData.engineTemp || '--' }}°C</div>
+                    <div class="metric-bar">
+                        <div class="metric-fill" 
+                             [style.width.%]="dashboardData.engineTemp ? (dashboardData.engineTemp / 130) * 100 : 0"
+                             [ngClass]="{
+                                'metric-fill-normal': (dashboardData.engineTemp || 0) < 100,
+                                'metric-fill-warning': (dashboardData.engineTemp || 0) >= 100 && (dashboardData.engineTemp || 0) < 110,
+                                'metric-fill-danger': (dashboardData.engineTemp || 0) >= 110
+                             }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-content">
+                    <div class="metric-label">Battery</div>
+                    <div class="metric-value">{{ dashboardData.batteryVoltage || '--' }}V</div>
+                    <div class="metric-bar">
+                        <div class="metric-fill" 
+                             [style.width.%]="dashboardData.batteryVoltage ? ((+dashboardData.batteryVoltage - 10) / 5) * 100 : 0"
+                             [ngClass]="{
+                                'metric-fill-danger': (+dashboardData.batteryVoltage! || 0) < 11.5,
+                                'metric-fill-warning': (+dashboardData.batteryVoltage! || 0) >= 11.5 && (+dashboardData.batteryVoltage! || 0) < 12.0,
+                                'metric-fill-normal': (+dashboardData.batteryVoltage! || 0) >= 12.0
+                             }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon">⛽</div>
+                <div class="metric-content">
+                    <div class="metric-label">Fuel Level</div>
+                    <div class="metric-value">{{ dashboardData.fuelLevel || '--' }}%</div>
+                    <div class="metric-bar">
+                        <div class="metric-fill" 
+                             [style.width.%]="getFuelLevelPercentage()"
+                             [ngClass]="{
+                                'metric-fill-danger': getFuelLevelPercentage() < 20,
+                                'metric-fill-warning': getFuelLevelPercentage() >= 20 && getFuelLevelPercentage() < 40,
+                                'metric-fill-normal': getFuelLevelPercentage() >= 40
+                             }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon">🔧</div>
+                <div class="metric-content">
+                    <div class="metric-label">Engine Load</div>
+                    <div class="metric-value">{{ dashboardData.engineLoad || '--' }}%</div>
+                    <div class="metric-bar">
+                        <div class="metric-fill" 
+                             [style.width.%]="getEngineLoadPercentage()"
+                             [ngClass]="{
+                                'metric-fill-normal': getEngineLoadPercentage() < 70,
+                                'metric-fill-warning': getEngineLoadPercentage() >= 70 && getEngineLoadPercentage() < 90,
+                                'metric-fill-danger': getEngineLoadPercentage() >= 90
+                             }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="system-info row">
+        <div class="col-lg-6 mb-3">
+            <fieldset *ngIf="wifiInfo">
+                <legend>WiFi Connection</legend>
+                <dl class="row">
+                    <dt class="col-sm-4">Network</dt>
+                    <dd class="col-sm-8">{{ wifiInfo.SSID }}</dd>
+                    <dt class="col-sm-4">IP Address</dt>
+                    <dd class="col-sm-8">{{ wifiInfo.ip }}</dd>
+                    <dt class="col-sm-4">MAC Address</dt>
+                    <dd class="col-sm-8">{{ wifiInfo.mac }}</dd>
+                </dl>
+            </fieldset>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <fieldset *ngIf="dtcs && dtcs.dtc && dtcs.dtc.length > 0">
+                <legend>
+                    <span class="text-warning">⚠️ Diagnostic Trouble Codes</span>
+                </legend>
+                <div class="dtc-list">
+                    <div *ngFor="let dtc of dtcs.dtc" class="dtc-item">
+                        <span class="dtc-code">{{ dtc }}</span>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+</div>

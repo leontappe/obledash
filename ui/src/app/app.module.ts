@@ -23,7 +23,7 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { AppComponent } from "./app.component";
 import { ApiService } from "./services/api.service";
 import { RouterModule } from "@angular/router";
-import { DeviceInfoComponent, OTAComponent, SettingsComponent } from "./components";
+import { DashboardComponent, DeviceInfoComponent, OTAComponent, SettingsComponent } from "./components";
 import { NgbTypeaheadModule } from "@ng-bootstrap/ng-bootstrap";
 import { OBDStatesComponent } from "./components/obdStates.component";
 import { ToastsComponent } from "./components/toasts.component";
@@ -33,6 +33,7 @@ import { ToastService } from "./services/toast.service";
     bootstrap: [AppComponent],
     declarations: [
         AppComponent,
+        DashboardComponent,
         DeviceInfoComponent,
         OBDStatesComponent,
         SettingsComponent
@@ -43,7 +44,9 @@ import { ToastService } from "./services/toast.service";
         ReactiveFormsModule,
         RouterModule.forRoot(
             [
-                {path: "", component: DeviceInfoComponent},
+                {path: "", component: DashboardComponent},
+                {path: "dashboard", component: DashboardComponent},
+                {path: "info", component: DeviceInfoComponent},
                 {path: "settings", component: SettingsComponent},
                 {path: "states", component: OBDStatesComponent},
                 {path: "ota", component: OTAComponent},
